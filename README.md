@@ -1,5 +1,7 @@
 # 🎉 FestaFlow
 
+**🌍 Acesso ao Sistema:** [https://festaflow-crm.vercel.app](https://festaflow-crm.vercel.app)
+
 Sistema web de gestão logística, CRM e acervo inteligente para empresas de eventos — construído com React, Supabase e Inteligência Artificial (Gemini API).
 
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
