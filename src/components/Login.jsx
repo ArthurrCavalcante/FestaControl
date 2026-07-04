@@ -98,14 +98,33 @@ export default function Login() {
             </div>
           )}
           
-          <Button 
-            type="submit" 
-            size="lg" 
-            isLoading={loading} 
-            className={styles.submitBtnOverrides}
-          >
-            {isRecoveryMode ? 'Enviar Link de Recuperação' : 'Entrar na Conta'}
-          </Button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <Button 
+              type="submit" 
+              size="lg" 
+              isLoading={loading} 
+              className={styles.submitBtnOverrides}
+            >
+              {isRecoveryMode ? 'Enviar Link de Recuperação' : 'Entrar na Conta'}
+            </Button>
+
+            {!isRecoveryMode && (
+              <Button 
+                type="button" 
+                size="lg" 
+                variant="secondary"
+                onClick={async () => {
+                  setLoading(true);
+                  setError(null);
+                  const { error } = await supabase.auth.signInWithPassword({ email: 'visitante@festaflow.com', password: 'demo-password' });
+                  if (error) setError('Conta de visitante não configurada no banco de dados.');
+                  setLoading(false);
+                }}
+              >
+                Acessar como Visitante (Demo)
+              </Button>
+            )}
+          </div>
         </form>
         
         <p className={styles.footerText}>
