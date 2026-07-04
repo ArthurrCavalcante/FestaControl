@@ -19,27 +19,34 @@ export function CompanyProvider({ children }) {
       }
 
       // 1. Busca o perfil do usuário para saber qual é a empresa dele
-      const { data: profile, error: profileError } = await supabase
+      // Usamos limit(1) e order para evitar erro 406 se houver múltiplos perfis
+      const { data: profiles, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
         .eq('user_id', user.id)
-        .single();
+        .not('company_id', 'is', null)
+        .limit(1);
         
       if (profileError) {
-        if (profileError.code === 'PGRST116') {
-          // Usuário não tem perfil = precisa fazer onboarding
+        throw profileError;
+      }
+      
+      let profile = profiles && profiles.length > 0 ? profiles[0] : null;
+
+      // Se não encontrou nenhum perfil COM company_id, tenta buscar qualquer um
+      if (!profile) {
+        const { data: fallbackProfiles } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('user_id', user.id)
+          .limit(1);
+          
+        if (!fallbackProfiles || fallbackProfiles.length === 0 || !fallbackProfiles[0].company_id) {
           setNeedsOnboarding(true);
           setLoading(false);
           return;
-        } else {
-          throw profileError;
         }
-      }
-      
-      if (!profile?.company_id) {
-        setNeedsOnboarding(true);
-        setLoading(false);
-        return;
+        profile = fallbackProfiles[0];
       }
 
       // 2. Busca as configurações específicas da empresa dele

@@ -54,14 +54,12 @@ export default function App() {
   const [festasProximos7Dias, setFestasProximos7Dias] = useState(0);
 
   const fetchDeals = async () => {
-    setIsFetchingDeals(true);
     setFetchError(null);
     const { data, error } = await supabase.from('deals').select('*, leads(*), events(*)');
     
     if (error) {
       console.error('Erro ao buscar dados:', error);
       setFetchError(error.message);
-      setIsFetchingDeals(false);
       return;
     }
     
@@ -100,7 +98,6 @@ export default function App() {
       });
       setFestasProximos7Dias(upcoming.length);
     }
-    setIsFetchingDeals(false);
   };
 
   const fetchAcervo = async () => {
@@ -117,12 +114,10 @@ export default function App() {
   };
 
   const fetchClientes = async () => {
-    setIsFetchingClientes(true);
     const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
     if (!error && data) {
       setClientes(data);
     }
-    setIsFetchingClientes(false);
   };
 
   useEffect(() => {
