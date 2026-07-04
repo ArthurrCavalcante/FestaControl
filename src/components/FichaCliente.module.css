@@ -264,6 +264,22 @@
   font-size: 0.95rem;
 }
 
+/* Gallery Layout */
+.galleryLayout {
+  display: flex;
+  gap: 2rem;
+}
+
+.galleryLeft {
+  flex: 1;
+}
+
+.galleryRight {
+  flex: 1;
+  border-left: 1px solid var(--border);
+  padding-left: 2rem;
+}
+
 /* Galeria Específico */
 .galleryGrid {
   display: grid;
@@ -318,14 +334,27 @@
   line-height: 1.5;
 }
 
+/* Message Input Responsividade */
 .messageInputArea {
   display: flex;
-  gap: 1rem;
-  align-items: center;
-  background: var(--surface);
-  padding: 1rem;
-  border-radius: var(--radius-md);
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.messageInputRow {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.messageSelect {
+  padding: 0.5rem;
+  border-radius: 8px;
   border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 0.9rem;
 }
 
 .messageInput {
@@ -353,5 +382,22 @@
   .motorSection {
     flex-direction: column;
     align-items: stretch;
+  }
+  .galleryLayout {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .galleryRight {
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--border);
+    padding-top: 1.5rem;
+  }
+  .messageInputRow {
+    flex-direction: column;
+  }
+  .messageSubmitBtn {
+    width: 100%;
+    justify-content: center;
   }
 }

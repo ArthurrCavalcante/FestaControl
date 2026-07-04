@@ -10,7 +10,7 @@ import Skeleton from './ui/Skeleton';
 import ErrorState from './ui/ErrorState';
 import ConfirmDialog from './ui/ConfirmDialog';
 import { toast } from 'react-hot-toast';
-import { archiveFotoCatalogo, archiveMultipleFotosCatalogo, logActivity } from '../services/dbService';
+import { deleteFotoCatalogo, deleteMultipleFotosCatalogo, logActivity } from '../services/dbService';
 import { 
   Image as ImageIcon, 
   CheckSquare, 
@@ -214,7 +214,7 @@ export default function Catalogo() {
       confirmText: 'Deletar',
       onConfirm: async () => {
         setConfirmAction(null);
-        const { error: deleteDbError } = await archiveFotoCatalogo(foto.id, foto.foto_path);
+        const { error: deleteDbError } = await deleteFotoCatalogo(foto.id, foto.foto_path);
         if (deleteDbError) {
             console.error('Erro ao deletar:', deleteDbError);
             toast.error('Erro ao deletar foto.');
@@ -265,7 +265,7 @@ export default function Catalogo() {
         const ids = fotosDoTema.map(f => f.id);
         const paths = fotosDoTema.map(f => f.foto_path);
 
-        const { error: deleteDbError } = await archiveMultipleFotosCatalogo(ids, paths);
+        const { error: deleteDbError } = await deleteMultipleFotosCatalogo(ids, paths);
         if (deleteDbError) {
             console.error('Erro ao deletar álbum:', deleteDbError);
             toast.error('Erro ao apagar álbum.');
@@ -328,7 +328,7 @@ export default function Catalogo() {
         const fotosToDelete = fotos.filter(f => selectedFotos.includes(f.id));
         const paths = fotosToDelete.map(f => f.foto_path);
         
-        const { error: deleteDbError } = await archiveMultipleFotosCatalogo(selectedFotos, paths);
+        const { error: deleteDbError } = await deleteMultipleFotosCatalogo(selectedFotos, paths);
 
         if (deleteDbError) {
           console.error('Erro ao remover arquivos:', deleteDbError);

@@ -8,7 +8,7 @@ import Badge from './ui/Badge';
 import IconButton from './ui/IconButton';
 import Button from './ui/Button';
 import { toast } from 'react-hot-toast';
-import { useCompany } from '../contexts/CompanyContext';
+import { useCompany } from '../hooks/useCompany';
 
 // Icons
 import { Clock, Truck, Package, Tag, ArrowRight, Filter } from 'lucide-react';

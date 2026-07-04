@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Card from './ui/Card';
 import Button from './ui/Button';
-import { useCompany } from '../contexts/CompanyContext';
+import { useCompany } from '../hooks/useCompany';
 import { toast } from 'react-hot-toast';
 
 export default function Configuracoes() {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import styles from './GeradorOrcamento.module.css';
 import { toast } from 'react-hot-toast';
-import { useCompany } from '../contexts/CompanyContext';
+import { useCompany } from '../hooks/useCompany';
 
 // UI
 import Modal from './ui/Modal';

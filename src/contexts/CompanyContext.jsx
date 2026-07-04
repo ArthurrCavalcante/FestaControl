@@ -1,29 +1,61 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { logError } from '../services/dbService';
 
-const CompanyContext = createContext({});
+export const CompanyContext = createContext({});
 
 export function CompanyProvider({ children }) {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   const fetchSettings = async () => {
     try {
-      // Como ainda não temos isolamento completo de multi-tenant na UI, 
-      // puxamos a primeira configuração disponível. (No futuro, filtraremos por company_id do usuário)
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      // 1. Busca o perfil do usuário para saber qual é a empresa dele
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+        
+      if (profileError) {
+        if (profileError.code === 'PGRST116') {
+          // Usuário não tem perfil = precisa fazer onboarding
+          setNeedsOnboarding(true);
+          setLoading(false);
+          return;
+        } else {
+          throw profileError;
+        }
+      }
+      
+      if (!profile?.company_id) {
+        setNeedsOnboarding(true);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Busca as configurações específicas da empresa dele
       const { data, error } = await supabase
         .from('company_settings')
         .select('*, companies(nome, documento)')
-        .limit(1)
+        .eq('company_id', profile.company_id)
         .single();
       
-      if (error && error.code !== 'PGRST116') { // Ignora erro de 0 rows
+      if (error && error.code !== 'PGRST116') {
         throw error;
       }
       
       if (data) {
         setSettings(data);
+        setNeedsOnboarding(false);
         
         // Injeta a cor primária no sistema
         if (data.primary_color) {
@@ -45,6 +77,7 @@ export function CompanyProvider({ children }) {
         fetchSettings();
       } else {
         setSettings(null);
+        setNeedsOnboarding(false);
         setLoading(false);
       }
     });
@@ -59,36 +92,35 @@ export function CompanyProvider({ children }) {
   }, []);
 
   const updateSettings = async (updates) => {
+    if (!settings?.company_id) return { error: 'Nenhuma empresa ativa' };
+    
     try {
-      if (!settings?.company_id) return { error: 'Nenhuma empresa ativa' };
-      
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('company_settings')
         .update(updates)
-        .eq('company_id', settings.company_id);
+        .eq('company_id', settings.company_id)
+        .select('*, companies(nome, documento)')
+        .single();
 
       if (error) throw error;
       
-      setSettings(prev => ({ ...prev, ...updates }));
-      
-      if (updates.primary_color) {
-        document.documentElement.style.setProperty('--primary', updates.primary_color);
+      if (data) {
+        setSettings(data);
+        if (data.primary_color) {
+          document.documentElement.style.setProperty('--primary', data.primary_color);
+        }
+        return { success: true };
       }
-      return { success: true };
     } catch (err) {
-      console.error(err);
-      logError(err, 'CompanyContext - updateSettings');
-      return { error: err.message };
+      console.error('Erro ao atualizar configurações:', err);
+      logError(err, 'CompanyContext.updateSettings');
+      throw err;
     }
   };
 
   return (
-    <CompanyContext.Provider value={{ settings, updateSettings, loading, reloadSettings: fetchSettings }}>
+    <CompanyContext.Provider value={{ settings, updateSettings, loading, needsOnboarding, refreshCompany: fetchSettings }}>
       {children}
     </CompanyContext.Provider>
   );
-}
-
-export function useCompany() {
-  return useContext(CompanyContext);
 }

@@ -4,7 +4,6 @@ import styles from './BaseClientes.module.css';
 // UI
 import Button from './ui/Button';
 import IconButton from './ui/IconButton';
-import Badge from './ui/Badge';
 import Card from './ui/Card';
 import EmptyState from './ui/EmptyState';
 import { toast } from 'react-hot-toast';
@@ -13,13 +12,7 @@ import { toast } from 'react-hot-toast';
 import { 
   Plus, 
   Upload, 
-  Flame, 
-  Inbox, 
-  Wallet, 
-  Clock, 
-  CheckCircle2, 
   Search,
-  MessageCircle,
   Users
 } from 'lucide-react';
 
@@ -29,7 +22,7 @@ const WhatsappIcon = ({ size = 18 }) => (
   </svg>
 );
 
-export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcamentoPara, onRefresh, onOpenImportModal }) {
+export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcamentoPara, onOpenImportModal }) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const calcularTempoEspera = (created_at) => {
@@ -40,15 +33,6 @@ export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcament
     if (hours < 24) return `${hours}h`;
     const days = Math.floor(hours / 24);
     return `${days}d`;
-  };
-
-  const calcularUrgencia = (created_at) => {
-    if (!created_at) return null;
-    const diff = new Date() - new Date(created_at);
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    if (hours > 48) return { label: 'Esfriando (>48h)', level: 'high' };
-    if (hours > 24) return { label: 'Responder Agora (>24h)', level: 'medium' };
-    return null;
   };
 
   const openWhatsApp = (e, telefone, nome) => {

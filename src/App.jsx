@@ -13,8 +13,9 @@ import IconButton from './components/ui/IconButton';
 import Configuracoes from './components/Configuracoes';
 import Perfil from './components/Perfil';
 import Dashboard from './components/Dashboard';
-import { PartyPopper, Calendar, MessageSquare, BarChart3, Settings, Bell, Search, Plus, ListTodo, Package, FileText, Image as ImageIcon, User, MapPin, Clock, Truck, FileCheck, CheckCircle2, Copy, LogOut, Users, LayoutDashboard, Camera, Menu, ChevronLeft } from 'lucide-react';
-import { useCompany } from './contexts/CompanyContext';
+import { PartyPopper, Calendar, MessageSquare, BarChart3, Settings, Bell, Search, Plus, ListTodo, Package, User, LogOut, Users, LayoutDashboard, Camera, Menu, ChevronLeft } from 'lucide-react';
+import { useCompany } from './hooks/useCompany';
+import Onboarding from './components/Onboarding';
 
 const KanbanBoard = lazy(() => import('./components/KanbanBoard'));
 const Catalogo = lazy(() => import('./components/Catalogo'));
@@ -27,13 +28,12 @@ const Agenda = lazy(() => import('./components/Agenda'));
 
 export default function App() {
   const [session, setSession] = useState(undefined); // undefined = loading auth
-  const { settings } = useCompany();
+  const { settings, needsOnboarding, refreshCompany, loading: companyLoading } = useCompany();
   const [acervo, setAcervo] = useState([]);
   const [requirePasswordReset, setRequirePasswordReset] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [isResetting, setIsResetting] = useState(false);
   const [eventPrompt, setEventPrompt] = useState(null);
-  const isMobileInitial = typeof window !== 'undefined' && window.innerWidth <= 768;
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showGerador, setShowGerador] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -42,7 +42,6 @@ export default function App() {
   const [leads, setLeads] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [isFetchingDeals, setIsFetchingDeals] = useState(false);
-  const [isFetchingClientes, setIsFetchingClientes] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -69,11 +68,14 @@ export default function App() {
     if (data) {
       const mapped = data.map(deal => ({
         id: deal.id,
+        company_id: deal.company_id,
         lead_id: deal.leads.id,
         nome: deal.leads.nome,
         telefone: deal.leads.telefone,
         origem: deal.leads.origem,
         interesse: deal.tema || 'Kit Personalizado',
+        tema: deal.tema,
+        tema_id: deal.tema_id,
         status: deal.status_funil,
         modalidade: deal.modalidade,
         created_at: deal.created_at || deal.leads.created_at,
@@ -319,10 +321,10 @@ export default function App() {
     }
   };
 
-  if (session === undefined) {
+  if (session === undefined || companyLoading) {
     return (
-      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)' }}>
-        <Spinner size={32} label="Verificando acesso..." />
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Spinner size={32} label="Carregando..." />
       </div>
     );
   }
@@ -342,6 +344,19 @@ export default function App() {
 
   if (!session) {
     return <Login />;
+  }
+
+  if (needsOnboarding) {
+    return (
+      <Onboarding 
+        onComplete={() => {
+          refreshCompany();
+          fetchDeals();
+          fetchClientes();
+          fetchAcervo();
+        }} 
+      />
+    );
   }
 
   if (requirePasswordReset) {
@@ -647,7 +662,14 @@ export default function App() {
             </h1>
           </div>
           <div className={styles.userProfile}>
-            <div className={styles.avatar}>FE</div>
+            <div 
+              className={styles.avatar} 
+              onClick={() => setActiveTab('perfil')}
+              style={{ cursor: 'pointer' }}
+              title="Ir para o Perfil"
+            >
+              {session?.user?.email?.substring(0, 2).toUpperCase() || 'U'}
+            </div>
             <IconButton 
               icon={LogOut} 
               variant="ghost" 

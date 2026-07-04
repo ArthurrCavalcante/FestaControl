@@ -11,7 +11,7 @@ import {
   User,
   PartyPopper
 } from 'lucide-react';
-import { useCompany } from '../contexts/CompanyContext';
+import { useCompany } from '../hooks/useCompany';
 import styles from './Dashboard.module.css';
 
 export default function Dashboard({ onNavigate }) {
