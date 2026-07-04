@@ -33,9 +33,9 @@ BEGIN
 
   -- 4. Criar ou Atualizar o perfil do usuário
   -- Como o trigger on_auth_user_created talvez não exista ou tenha falhado, fazemos um UPSERT
-  INSERT INTO public.profiles (user_id, nome, role, company_id)
-  VALUES (v_user_id, p_user_name, 'admin', v_company_id)
-  ON CONFLICT (user_id) DO UPDATE
+  INSERT INTO public.profiles (id, user_id, nome, role, company_id)
+  VALUES (v_user_id, v_user_id, p_user_name, 'admin', v_company_id)
+  ON CONFLICT (id) DO UPDATE
   SET 
     nome = EXCLUDED.nome,
     role = 'admin',
