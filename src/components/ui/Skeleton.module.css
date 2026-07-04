@@ -1,0 +1,20 @@
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-hover) 25%,
+    var(--border) 50%,
+    var(--surface-hover) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite linear;
+  display: inline-block;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

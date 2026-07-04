@@ -1,0 +1,268 @@
+.container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.titleArea h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+  letter-spacing: -0.025em;
+}
+
+.titleArea p {
+  color: var(--text-secondary);
+  margin: 0.5rem 0 0 0;
+}
+
+.searchBox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  background: var(--surface);
+  padding: 0.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.searchLabel {
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+}
+
+.dateInput {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  outline: none;
+  font-family: inherit;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--bg-color);
+  transition: var(--transition);
+}
+
+.dateInput:focus {
+  border-color: var(--primary);
+}
+
+.clearBtn {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+}
+
+.clearBtn:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+/* Timeline */
+.timeline {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  gap: 2rem;
+  padding-bottom: 2rem;
+}
+
+.dayColumn {
+  flex: 1;
+  min-width: 320px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.dayTitle {
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dayCards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.timeLabel {
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--text-primary);
+}
+
+.cardBody {
+  margin-bottom: 1rem;
+}
+
+.clientText {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  margin-bottom: 0.25rem;
+}
+
+.themeText {
+  color: var(--gray-600);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.locationTag {
+  display: inline-flex;
+  align-items: center;
+  background: var(--blue-light);
+  color: var(--blue);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
+/* Modal Specifics */
+.modalSubtitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+  color: var(--text-primary);
+}
+
+.addressText {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+.alertBox {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.alertHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #b91c1c;
+}
+
+.alertHeader h4 {
+  margin: 0 0 0.25rem 0;
+}
+
+.alertHeader p {
+  margin: 0;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: var(--bg-color);
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.checkItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.checkItem input {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.checkItem:hover {
+  color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  .timeline {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 1rem;
+    padding-bottom: 1rem;
+    gap: 1rem;
+    -webkit-overflow-scrolling: touch;
+  }
+  .dayColumn {
+    scroll-snap-align: center;
+    min-width: 85vw;
+    width: 85vw;
+    flex: 0 0 auto;
+  }
+}

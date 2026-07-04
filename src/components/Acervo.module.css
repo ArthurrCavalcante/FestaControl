@@ -1,0 +1,277 @@
+.container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.subtitle {
+  color: var(--gray-500);
+  margin: 4px 0 0 40px;
+  font-size: 14px;
+}
+
+.filters {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.searchBox {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
+}
+
+.searchBox input {
+  flex: 1;
+  border: none;
+  padding: 12px 0;
+  outline: none;
+  font-size: 15px;
+}
+
+.filterSelect {
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
+  background: white;
+  min-width: 150px;
+  font-size: 14px;
+  outline: none;
+}
+
+.tableContainer {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--gray-200);
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  padding: 16px;
+  background: var(--gray-50);
+  color: var(--gray-500);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--gray-100);
+  font-size: 14px;
+  color: var(--gray-700);
+  vertical-align: middle;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.inactiveRow td {
+  opacity: 0.6;
+}
+.inactiveRow .statusCell {
+  opacity: 1;
+}
+
+.statusCell {
+  width: 100px;
+}
+
+.badgeActive, .badgeInactive {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badgeActive {
+  background: var(--green-light);
+  color: var(--green);
+}
+
+.badgeInactive {
+  background: var(--gray-100);
+  color: var(--gray-500);
+}
+
+.nomeCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.obsIcon {
+  color: var(--yellow);
+  cursor: help;
+}
+
+.categoryBadge {
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.locationBadge {
+  background: var(--blue-light);
+  color: var(--blue);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.aliasesCell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.aliasTag {
+  background: var(--gray-100);
+  color: var(--gray-600);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.actionsColumn {
+  width: 100px;
+  text-align: right;
+}
+
+.actionsCell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.actionBtn {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--gray-400);
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.actionBtn:hover {
+  background: var(--gray-50);
+  color: var(--primary);
+}
+
+.emptyState {
+  text-align: center;
+  padding: 48px;
+  color: var(--gray-500);
+}
+
+.loading {
+  text-align: center;
+  padding: 48px;
+  color: var(--gray-500);
+}
+
+/* Formulário do Modal */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formRow {
+  display: flex;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .formRow {
+    flex-direction: column;
+  }
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formGroup label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-700);
+}
+
+.formGroup input, .formGroup select, .formGroup textarea {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-300);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.formGroup input:focus, .formGroup select:focus, .formGroup textarea:focus {
+  border-color: var(--primary);
+}
+
+.formGroup small {
+  color: var(--gray-500);
+  font-size: 12px;
+}
+
+.checkboxGroup {
+  margin-top: 8px;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--gray-200);
+}
