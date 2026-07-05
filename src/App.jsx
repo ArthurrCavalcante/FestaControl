@@ -343,14 +343,17 @@ export default function App() {
 
   if (needsOnboarding) {
     return (
-      <Onboarding 
-        onComplete={() => {
-          refreshCompany();
-          fetchDeals();
-          fetchClientes();
-          fetchAcervo();
-        }} 
-      />
+      <>
+        <Toaster position="top-right" />
+        <Onboarding 
+          onComplete={() => {
+            refreshCompany();
+            fetchDeals();
+            fetchClientes();
+            fetchAcervo();
+          }} 
+        />
+      </>
     );
   }
 
