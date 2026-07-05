@@ -13,7 +13,7 @@ import IconButton from './components/ui/IconButton';
 import Configuracoes from './components/Configuracoes';
 import Perfil from './components/Perfil';
 import Dashboard from './components/Dashboard';
-import { PartyPopper, Calendar, MessageSquare, BarChart3, Settings, Bell, Search, Plus, ListTodo, Package, User, LogOut, Users, LayoutDashboard, Camera, Menu, ChevronLeft } from 'lucide-react';
+import { PartyPopper, Calendar, MessageSquare, BarChart3, Settings, Bell, Search, Plus, ListTodo, Package, User, LogOut, Users, LayoutDashboard, Camera, Menu, ChevronLeft, Zap } from 'lucide-react';
 import { useCompany } from './hooks/useCompany';
 import Onboarding from './components/Onboarding';
 
@@ -25,6 +25,7 @@ const GeradorOrcamento = lazy(() => import('./components/GeradorOrcamento'));
 const FichaCliente = lazy(() => import('./components/FichaCliente'));
 const BaseClientes = lazy(() => import('./components/BaseClientes'));
 const Agenda = lazy(() => import('./components/Agenda'));
+const Automacoes = lazy(() => import('./components/Automacoes'));
 
 export default function App() {
   const [session, setSession] = useState(undefined); // undefined = loading auth
@@ -417,6 +418,7 @@ export default function App() {
           }}
         />;
       if (activeTab === 'configuracoes') return <Configuracoes />;
+      if (activeTab === 'automacoes') return <Automacoes />;
       if (activeTab === 'perfil') return <Perfil />;
       return null;
     };
@@ -593,6 +595,13 @@ export default function App() {
             <User size={20} /> <span className={styles.navLabel}>Meu Perfil</span>
           </button>
           <button 
+            className={`${styles.navItem} ${activeTab === 'automacoes' ? styles.active : ''}`}
+            onClick={() => { setActiveTab('automacoes'); setMobileMenuOpen(false); }}
+            title="Automações"
+          >
+            <Zap size={20} /> <span className={styles.navLabel}>Automações</span>
+          </button>
+          <button 
             className={`${styles.navItem} ${activeTab === 'configuracoes' ? styles.active : ''}`}
             onClick={() => { setActiveTab('configuracoes'); setMobileMenuOpen(false); }}
             title="Configurações"
@@ -655,6 +664,7 @@ export default function App() {
                activeTab === 'acervo' ? 'Acervo' :
                activeTab === 'catalogo' ? 'Galeria' :
                activeTab === 'configuracoes' ? 'Configurar' :
+               activeTab === 'automacoes' ? 'Automações' :
                activeTab === 'perfil' ? 'Perfil' :
                'FestaFlow'}
             </h1>

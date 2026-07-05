@@ -18,7 +18,15 @@ async function verifySignature(appSecret: string, signature: string, rawBody: Ar
   const signatureBuffer = await crypto.subtle.sign('HMAC', key, rawBody);
   const hashArray = Array.from(new Uint8Array(signatureBuffer));
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return 'sha256=' + hashHex === signature;
+  const expectedSignature = 'sha256=' + hashHex;
+  
+  // Comparação em tempo constante (evita timing attacks)
+  if (expectedSignature.length !== signature.length) return false;
+  let result = 0;
+  for (let i = 0; i < expectedSignature.length; i++) {
+    result |= expectedSignature.charCodeAt(i) ^ signature.charCodeAt(i);
+  }
+  return result === 0;
 }
 
 serve(async (req) => {

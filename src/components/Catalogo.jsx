@@ -77,6 +77,10 @@ export default function Catalogo() {
     if (!files.length) return;
     
     files.forEach(file => {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        toast.error(`Arquivo inválido: ${file.name}. Envie apenas JPG, PNG ou WEBP.`);
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (ev) => {
         setPreviews(prev => [...prev, { 
