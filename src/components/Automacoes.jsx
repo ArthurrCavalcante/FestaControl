@@ -12,8 +12,8 @@ import {
   Zap,
   Plug,
   MessageCircle,
-  Facebook,
-  Instagram,
+  Globe,
+  Camera,
   Mail
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -123,8 +123,8 @@ const AUTOMATION_CATEGORIES = [
 
 const CONNECTIONS = [
   { id: 'whatsapp', name: 'WhatsApp', icon: MessageCircle, status: 'disconnected' },
-  { id: 'facebook', name: 'Facebook Groups', icon: Facebook, status: 'disconnected' },
-  { id: 'instagram', name: 'Instagram Direct', icon: Instagram, status: 'disconnected' },
+  { id: 'facebook', name: 'Facebook Groups', icon: Globe, status: 'disconnected' },
+  { id: 'instagram', name: 'Instagram Direct', icon: Camera, status: 'disconnected' },
   { id: 'google_calendar', name: 'Google Agenda', icon: Calendar, status: 'disconnected' },
   { id: 'gemini', name: 'Google Gemini', icon: Zap, status: 'connected' } // Exemplo
 ];
