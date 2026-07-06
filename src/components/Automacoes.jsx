@@ -14,145 +14,41 @@ import {
   MessageCircle,
   Globe,
   Camera,
-  Mail
+  Mail,
+  Activity,
+  History,
+  GitBranch
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-const AUTOMATION_CATEGORIES = [
-  {
-    id: 'atendimento',
-    title: 'Atendimento',
-    icon: Bot,
-    items: [
-      {
-        id: 'auto_create_lead',
-        title: 'Criar Lead automaticamente',
-        description: 'O FestaFlow identificará clientes interessados nas mensagens e criará a ficha automaticamente.',
-        dependency: 'WhatsApp ou Meta conectado',
-        economy: '5 min por lead',
-        active: false
-      },
-      {
-        id: 'auto_create_deal',
-        title: 'Criar orçamento automaticamente',
-        description: 'Se o cliente informar o tema e a data, o orçamento inicial será gerado no seu pipeline.',
-        dependency: 'WhatsApp ou Meta conectado',
-        economy: '8 min por cliente',
-        active: false
-      },
-      {
-        id: 'ai_suggest_response',
-        title: 'Sugerir resposta por IA',
-        description: 'A inteligência artificial analisará o contexto e sugerirá respostas com base no seu acervo.',
-        dependency: 'Gemini conectado',
-        economy: '2 min por mensagem',
-        active: false
-      }
-    ]
-  },
-  {
-    id: 'operacao',
-    title: 'Operação',
-    icon: Calendar,
-    items: [
-      {
-        id: 'auto_create_event',
-        title: 'Criar evento na agenda quando confirmar venda',
-        description: 'Assim que um orçamento for movido para Confirmado, a data será bloqueada na sua Agenda oficial.',
-        dependency: null,
-        economy: '3 min por festa',
-        active: false
-      },
-      {
-        id: 'notify_team',
-        title: 'Avisar equipe',
-        description: 'Mande um resumo automático no grupo da sua equipe (WhatsApp) sempre que uma festa fechar.',
-        dependency: 'WhatsApp conectado',
-        economy: '5 min por evento',
-        active: false
-      }
-    ]
-  },
-  {
-    id: 'financeiro',
-    title: 'Financeiro',
-    icon: Wallet,
-    items: [
-      {
-        id: 'notify_deposit_pending',
-        title: 'Avisar sinal pendente',
-        description: 'Envia um lembrete gentil para clientes que aceitaram o orçamento mas não pagaram o sinal.',
-        dependency: 'WhatsApp conectado',
-        economy: 'Risco de inadimplência reduzido',
-        active: false
-      },
-      {
-        id: 'notify_final_payment',
-        title: 'Avisar pagamento final',
-        description: 'Cobra automaticamente o restante do pagamento 1 dia antes da festa.',
-        dependency: 'WhatsApp conectado',
-        economy: '10 min por festa',
-        active: false
-      }
-    ]
-  },
-  {
-    id: 'pos_venda',
-    title: 'Pós-venda',
-    icon: PartyPopper,
-    items: [
-      {
-        id: 'ask_review',
-        title: 'Pedir avaliação',
-        description: 'Pergunta se o cliente gostou e pede uma avaliação 2 dias após a festa.',
-        dependency: 'WhatsApp conectado',
-        economy: 'Marketing orgânico',
-        active: false
-      },
-      {
-        id: 'remind_next_year',
-        title: 'Lembrar aniversário no próximo ano',
-        description: 'Envia uma mensagem 11 meses depois oferecendo desconto para a próxima festa.',
-        dependency: 'WhatsApp conectado',
-        economy: 'Aumenta retenção em 40%',
-        active: false
-      }
-    ]
-  }
-];
 
 const CONNECTIONS = [
   { id: 'whatsapp', name: 'WhatsApp', icon: MessageCircle, status: 'disconnected' },
   { id: 'facebook', name: 'Facebook Groups', icon: Globe, status: 'disconnected' },
   { id: 'instagram', name: 'Instagram Direct', icon: Camera, status: 'disconnected' },
   { id: 'google_calendar', name: 'Google Agenda', icon: Calendar, status: 'disconnected' },
-  { id: 'gemini', name: 'Google Gemini', icon: Zap, status: 'connected' } // Exemplo
+  { id: 'gemini', name: 'Google Gemini', icon: Zap, status: 'connected' }
 ];
 
 export default function Automacoes() {
   const { settings, updateSettings } = useCompany();
-  const [activeTab, setActiveTab] = useState('automacoes'); // 'automacoes' | 'conexoes'
+  const [activeTab, setActiveTab] = useState('regras'); // 'regras' | 'histórico' | 'conexoes'
   const [isSaving, setIsSaving] = useState(false);
 
-  // Fallback to empty object if automations is null or undefined
   const currentAutomations = settings?.automations || {};
 
-  const handleToggle = async (itemId) => {
+  // Handlers para o novo formato JSON
+  const handleModeChange = async (automationKey, newMode) => {
     try {
       setIsSaving(true);
-      const newValue = !currentAutomations[itemId];
       const updatedAutomations = {
         ...currentAutomations,
-        [itemId]: newValue
+        [automationKey]: {
+          ...(currentAutomations[automationKey] || {}),
+          mode: newMode
+        }
       };
-
       await updateSettings({ automations: updatedAutomations });
-      
-      if (newValue) {
-        toast.success('Automação ativada!');
-      } else {
-        toast('Automação desativada.', { icon: '🛑' });
-      }
+      toast.success('Regra atualizada com sucesso!');
     } catch (error) {
       toast.error('Erro ao salvar configuração.');
     } finally {
@@ -160,22 +56,146 @@ export default function Automacoes() {
     }
   };
 
+  const handleToggleFeature = async (automationKey) => {
+    try {
+      setIsSaving(true);
+      const currentConfig = currentAutomations[automationKey] || {};
+      const newEnabled = !currentConfig.enabled;
+      
+      const updatedAutomations = {
+        ...currentAutomations,
+        [automationKey]: {
+          ...currentConfig,
+          enabled: newEnabled
+        }
+      };
+      await updateSettings({ automations: updatedAutomations });
+      if (newEnabled) toast.success('Função ativada!');
+      else toast('Função desativada.', { icon: '🛑' });
+    } catch (error) {
+      toast.error('Erro ao salvar configuração.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const renderModes = () => {
+    const leadCreationMode = currentAutomations['lead_creation']?.mode || 'manual';
+
+    return (
+      <div className={styles.automationsWrapper}>
+        
+        {/* Banner Sugestões Inteligentes */}
+        <div className={styles.smartSuggestions}>
+          <div className={styles.smartSuggestionsIcon}>
+            <Zap size={24} color="#f59e0b" fill="#f59e0b" />
+          </div>
+          <div className={styles.smartSuggestionsText}>
+            <h3>Acelerador de IA (Fila de Revisão)</h3>
+            <p>Deixe a Inteligência Artificial estruturar os dados das mensagens recebidas e sugerir ações de negócio para você revisar.</p>
+          </div>
+          <label className={styles.switch}>
+            <input 
+              type="checkbox" 
+              checked={!!currentAutomations['ai_accelerator']?.enabled} 
+              onChange={() => handleToggleFeature('ai_accelerator')}
+              disabled={isSaving}
+            />
+            <span className={styles.slider}></span>
+          </label>
+        </div>
+
+        {/* Engine Configs */}
+        <div className={styles.categoryBlock}>
+          <h2 className={styles.categoryTitle}>
+            <GitBranch size={22} className={styles.categoryIcon} />
+            Regras de Captação (Leads & Orçamentos)
+          </h2>
+          
+          <div className={styles.engineCard}>
+            <div className={styles.engineHeader}>
+              <div>
+                <h3>Criação de Leads e Orçamentos</h3>
+                <p>O que acontece quando o Webhook recebe uma mensagem de um novo cliente?</p>
+              </div>
+            </div>
+            
+            <div className={styles.optionsGroup}>
+              <label className={`${styles.radioOption} ${leadCreationMode === 'manual' ? styles.activeOption : ''}`}>
+                <input 
+                  type="radio" 
+                  name="lead_creation_mode" 
+                  value="manual"
+                  checked={leadCreationMode === 'manual'}
+                  onChange={() => handleModeChange('lead_creation', 'manual')}
+                  disabled={isSaving}
+                />
+                <div className={styles.optionContent}>
+                  <strong>Manual</strong>
+                  <span>A mensagem cai na caixa de entrada. Você cria o lead manualmente.</span>
+                </div>
+              </label>
+
+              <label className={`${styles.radioOption} ${leadCreationMode === 'semi_auto' ? styles.activeOption : ''}`}>
+                <input 
+                  type="radio" 
+                  name="lead_creation_mode" 
+                  value="semi_auto"
+                  checked={leadCreationMode === 'semi_auto'}
+                  onChange={() => handleModeChange('lead_creation', 'semi_auto')}
+                  disabled={isSaving}
+                />
+                <div className={styles.optionContent}>
+                  <strong>Fila de Revisão (Recomendado)</strong>
+                  <span>A IA extrai os dados (Nome, Tema, Data) e pede sua aprovação na aba Pendências.</span>
+                </div>
+              </label>
+
+              <label className={`${styles.radioOption} ${leadCreationMode === 'automatic' ? styles.activeOption : ''}`}>
+                <input 
+                  type="radio" 
+                  name="lead_creation_mode" 
+                  value="automatic"
+                  checked={leadCreationMode === 'automatic'}
+                  onChange={() => handleModeChange('lead_creation', 'automatic')}
+                  disabled={isSaving}
+                />
+                <div className={styles.optionContent}>
+                  <strong>100% Automático</strong>
+                  <span>O Motor de Eventos cria o Lead e o Orçamento sozinho se a confiança da IA for alta (&gt;90%).</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    );
+  };
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Cérebro Operacional</h1>
-          <p className={styles.subtitle}>Configure o que o FestaFlow fará automaticamente por você.</p>
+          <h1 className={styles.title}>Motor Operacional</h1>
+          <p className={styles.subtitle}>Configure regras e delegue o trabalho braçal para os executores do FestaFlow.</p>
         </div>
       </header>
 
       <div className={styles.tabs}>
         <button 
-          className={`${styles.tab} ${activeTab === 'automacoes' ? styles.active : ''}`}
-          onClick={() => setActiveTab('automacoes')}
+          className={`${styles.tab} ${activeTab === 'regras' ? styles.active : ''}`}
+          onClick={() => setActiveTab('regras')}
         >
-          <Zap size={18} />
-          Automações
+          <GitBranch size={18} />
+          Regras de Ação
+        </button>
+        <button 
+          className={`${styles.tab} ${activeTab === 'historico' ? styles.active : ''}`}
+          onClick={() => setActiveTab('historico')}
+        >
+          <History size={18} />
+          Execuções & Erros
         </button>
         <button 
           className={`${styles.tab} ${activeTab === 'conexoes' ? styles.active : ''}`}
@@ -187,86 +207,23 @@ export default function Automacoes() {
       </div>
 
       <div className={styles.content}>
-        {activeTab === 'automacoes' && (
-          <div className={styles.automationsWrapper}>
-            
-            <div className={styles.smartSuggestions}>
-              <div className={styles.smartSuggestionsIcon}>
-                <Zap size={24} color="#f59e0b" fill="#f59e0b" />
-              </div>
-              <div className={styles.smartSuggestionsText}>
-                <h3>Sugestões Inteligentes (Dashboard)</h3>
-                <p>O FestaFlow analisará seu pipeline diariamente e sugerirá ações cruciais (ex: "Cobrar João", "Confirmar endereço da Maria").</p>
-              </div>
-              <label className={styles.switch}>
-                <input 
-                  type="checkbox" 
-                  checked={!!currentAutomations['smart_suggestions']} 
-                  onChange={() => handleToggle('smart_suggestions')}
-                  disabled={isSaving}
-                />
-                <span className={styles.slider}></span>
-              </label>
-            </div>
+        {activeTab === 'regras' && renderModes()}
 
-            {AUTOMATION_CATEGORIES.map(category => (
-              <div key={category.id} className={styles.categoryBlock}>
-                <h2 className={styles.categoryTitle}>
-                  <category.icon size={22} className={styles.categoryIcon} />
-                  {category.title}
-                </h2>
-                <div className={styles.cardGrid}>
-                  {category.items.map(item => {
-                    const isActive = !!currentAutomations[item.id];
-                    return (
-                      <div key={item.id} className={`${styles.card} ${isActive ? styles.cardActive : ''}`}>
-                        <div className={styles.cardHeader}>
-                          <h3 className={styles.cardTitle}>{item.title}</h3>
-                          <label className={styles.switch}>
-                            <input 
-                              type="checkbox" 
-                              checked={isActive} 
-                              onChange={() => handleToggle(item.id)}
-                              disabled={isSaving}
-                            />
-                            <span className={styles.slider}></span>
-                          </label>
-                        </div>
-                        
-                        <p className={styles.cardDesc}>{item.description}</p>
-                        
-                        <div className={styles.cardFooter}>
-                          {item.dependency ? (
-                            <span className={styles.dependencyBadge}>
-                              <AlertTriangle size={14} />
-                              Necessita: {item.dependency}
-                            </span>
-                          ) : (
-                            <span className={styles.readyBadge}>
-                              <CheckCircle2 size={14} />
-                              Pronto para uso
-                            </span>
-                          )}
-                          
-                          <span className={styles.economyBadge}>
-                            <Clock size={14} />
-                            {item.economy}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+        {activeTab === 'historico' && (
+          <div className={styles.historyWrapper}>
+            <div className={styles.blankState}>
+              <Activity size={48} color="var(--border-color)" />
+              <h3>Nenhuma execução recente</h3>
+              <p>Quando o Motor começar a processar eventos (ex: criação automática de lead via IA), o histórico detalhado aparecerá aqui.</p>
+            </div>
           </div>
         )}
 
         {activeTab === 'conexoes' && (
           <div className={styles.connectionsWrapper}>
             <div className={styles.connectionsHeader}>
-              <h2>Plataformas Conectadas</h2>
-              <p>Conecte o FestaFlow às suas redes sociais e ferramentas para liberar o poder das Automações.</p>
+              <h2>Canais (Webhooks)</h2>
+              <p>Conecte as fontes de eventos (como mensagens) para engatilhar o Motor do FestaFlow.</p>
             </div>
             
             <div className={styles.connectionGrid}>
@@ -291,7 +248,7 @@ export default function Automacoes() {
                   </div>
                   <button 
                     className={styles.connBtn} 
-                    onClick={() => toast('Configuração de conexões em breve!')}
+                    onClick={() => toast('Em breve você poderá mapear seus próprios Webhooks.')}
                   >
                     {conn.status === 'connected' ? 'Configurar' : 'Conectar'}
                   </button>

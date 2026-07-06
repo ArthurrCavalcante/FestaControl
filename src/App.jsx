@@ -45,6 +45,7 @@ export default function App() {
   const [isFetchingDeals, setIsFetchingDeals] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const requestEventData = (defaultData, defaultHora) => {
     return new Promise((resolve) => {
@@ -588,35 +589,11 @@ export default function App() {
         
         <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
           <button 
-            className={`${styles.navItem} ${activeTab === 'perfil' ? styles.active : ''}`}
-            onClick={() => { setActiveTab('perfil'); setMobileMenuOpen(false); }}
-            title="Meu Perfil"
-          >
-            <User size={20} /> <span className={styles.navLabel}>Meu Perfil</span>
-          </button>
-          <button 
             className={`${styles.navItem} ${activeTab === 'automacoes' ? styles.active : ''}`}
             onClick={() => { setActiveTab('automacoes'); setMobileMenuOpen(false); }}
-            title="Automações"
+            title="Motor"
           >
-            <Zap size={20} /> <span className={styles.navLabel}>Automações</span>
-          </button>
-          <button 
-            className={`${styles.navItem} ${activeTab === 'configuracoes' ? styles.active : ''}`}
-            onClick={() => { setActiveTab('configuracoes'); setMobileMenuOpen(false); }}
-            title="Configurações"
-          >
-            <Settings size={20} /> <span className={styles.navLabel}>Configurações</span>
-          </button>
-          <button 
-            className={styles.navItem}
-            onClick={async () => {
-              await supabase.auth.signOut();
-            }}
-            style={{ color: 'var(--danger)' }}
-            title="Sair"
-          >
-            <LogOut size={20} /> <span className={styles.navLabel}>Sair</span>
+            <Zap size={20} /> <span className={styles.navLabel}>Motor</span>
           </button>
         </div>
       </aside>
@@ -664,7 +641,7 @@ export default function App() {
                activeTab === 'acervo' ? 'Acervo' :
                activeTab === 'catalogo' ? 'Galeria' :
                activeTab === 'configuracoes' ? 'Configurar' :
-               activeTab === 'automacoes' ? 'Automações' :
+               activeTab === 'automacoes' ? 'Motor' :
                activeTab === 'perfil' ? 'Perfil' :
                'FestaFlow'}
             </h1>
@@ -672,19 +649,42 @@ export default function App() {
           <div className={styles.userProfile}>
             <div 
               className={styles.avatar} 
-              onClick={() => setActiveTab('perfil')}
+              onClick={() => setProfileMenuOpen(!profileMenuOpen)}
               style={{ cursor: 'pointer' }}
-              title="Ir para o Perfil"
+              title="Menu da Conta"
             >
               {session?.user?.email?.substring(0, 2).toUpperCase() || 'U'}
             </div>
-            <IconButton 
-              icon={LogOut} 
-              variant="ghost" 
-              color="danger" 
-              onClick={handleLogout} 
-              title="Sair da conta" 
-            />
+            
+            {profileMenuOpen && (
+              <>
+                <div 
+                  style={{ position: 'fixed', inset: 0, zIndex: 40 }} 
+                  onClick={() => setProfileMenuOpen(false)} 
+                />
+                <div className={styles.profileDropdown}>
+                  <button 
+                    className={styles.dropdownItem}
+                    onClick={() => { setActiveTab('perfil'); setProfileMenuOpen(false); }}
+                  >
+                    <User size={18} /> Meu Perfil
+                  </button>
+                  <button 
+                    className={styles.dropdownItem}
+                    onClick={() => { setActiveTab('configuracoes'); setProfileMenuOpen(false); }}
+                  >
+                    <Settings size={18} /> Configurações
+                  </button>
+                  <div style={{ height: '1px', background: 'var(--border-color)', margin: '4px 0' }} />
+                  <button 
+                    className={`${styles.dropdownItem} ${styles.danger}`}
+                    onClick={() => { setProfileMenuOpen(false); handleLogout(); }}
+                  >
+                    <LogOut size={18} /> Sair da conta
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </header>
         <div className={styles.pageContent}>

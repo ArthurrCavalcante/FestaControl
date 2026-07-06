@@ -94,17 +94,40 @@ serve(async (req) => {
              const providerMessageId = webhook_event.message.mid;
              
              // Message Service Layer: 
-             // 1. Busca ou cria Conversation
+             // 1. Identificar Empresa (Tenant)
+             let companyId = null;
+             const recipientId = webhook_event.recipient?.id;
+             
+             if (recipientId) {
+                const { data: conn } = await supabase
+                  .from('company_connections')
+                  .select('company_id')
+                  .eq('external_id', recipientId)
+                  .eq('platform', 'facebook')
+                  .single();
+                  
+                if (conn) {
+                   companyId = conn.company_id;
+                }
+             }
+             
+             // Se não achou empresa, loga e continua (não processa para tenant inexistente)
+             if (!companyId) {
+                console.warn(`Mensagem recebida de recipient ${recipientId} não mapeada para nenhuma empresa.`);
+                continue;
+             }
+
+             // 2. Busca ou cria Conversation
              let { data: conversation } = await supabase
                .from('conversations')
                .select('*')
                .eq('remetente_id', sender_psid)
+               .eq('company_id', companyId)
                .single();
 
              if (!conversation) {
-                // Busca o nome real do cliente na Graph API do Facebook
                 let clientName = `Cliente FB (${sender_psid.substring(0,4)})`;
-                const PAGE_ACCESS_TOKEN = Deno.env.get('FB_PAGE_ACCESS_TOKEN');
+                const PAGE_ACCESS_TOKEN = Deno.env.get('FB_PAGE_ACCESS_TOKEN'); // O ideal é ter o token salvo por tenant no futuro
                 if (PAGE_ACCESS_TOKEN) {
                   try {
                     const profileResp = await fetch(`https://graph.facebook.com/v19.0/${sender_psid}?fields=first_name,last_name&access_token=${PAGE_ACCESS_TOKEN}`);
@@ -115,13 +138,14 @@ serve(async (req) => {
                       }
                     }
                   } catch (e) {
-                    console.error('Erro ao buscar perfil do usuário no Facebook:', e);
+                    console.error('Erro ao buscar perfil:', e);
                   }
                 }
 
                 const { data: newConv, error: convError } = await supabase
                   .from('conversations')
                   .insert({
+                     company_id: companyId,
                      canal: 'facebook',
                      remetente_id: sender_psid,
                      nome_cliente: clientName,
@@ -133,7 +157,6 @@ serve(async (req) => {
                 if (convError) throw convError;
                 conversation = newConv;
              } else {
-                // Se já existe, atualiza a última atividade
                 await supabase
                   .from('conversations')
                   .update({
@@ -143,9 +166,9 @@ serve(async (req) => {
                   }).eq('id', conversation.id);
              }
 
-             // 2. Insere a Message associada
+             // 3. Insere a Message
+             let messageId = null;
              if (conversation) {
-               // Verifica duplicidade básica pelo provider_message_id (se tiver)
                const { data: existingMsg } = await supabase
                   .from('messages')
                   .select('id')
@@ -153,13 +176,35 @@ serve(async (req) => {
                   .single();
                   
                if (!existingMsg) {
-                 await supabase.from('messages').insert({
+                 const { data: insertedMsg, error: msgError } = await supabase.from('messages').insert({
+                   company_id: companyId,
                    conversation_id: conversation.id,
                    direction: 'INBOUND',
                    content: messageText,
                    provider_message_id: providerMessageId
-                 });
+                 }).select('id').single();
+                 
+                 if (!msgError && insertedMsg) {
+                   messageId = insertedMsg.id;
+                 }
+               } else {
+                 messageId = existingMsg.id;
                }
+             }
+
+             // 4. Cria evento na Fila de Processamento (Engine) apenas se a mensagem for nova
+             if (messageId && conversation) {
+               await supabase.from('events_queue').insert({
+                 company_id: companyId,
+                 type: 'MESSAGE_RECEIVED',
+                 payload: {
+                   message_id: messageId,
+                   conversation_id: conversation.id,
+                   content: messageText,
+                   platform: 'facebook'
+                 },
+                 status: 'PENDING'
+               });
              }
           }
         }
