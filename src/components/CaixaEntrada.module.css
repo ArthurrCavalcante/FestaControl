@@ -371,3 +371,86 @@
   display: flex;
   justify-content: flex-end;
 }
+
+/* AI Review Panel */
+.aiReviewPanel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.aiReviewHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.aiReviewHeader h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.aiReviewHeader p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.aiReason {
+  background: var(--warning-light, #fef3c7);
+  color: var(--warning, #b45309);
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.aiFields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  background: var(--bg-color);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.aiField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.aiField span {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.aiField strong {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.aiActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.badgeAi {
+  background: #d946ef !important;
+  color: white !important;
+}

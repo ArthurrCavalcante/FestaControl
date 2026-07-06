@@ -17,10 +17,10 @@ async function callGemini(message: string) {
 
   const prompt = `Você é um assistente de CRM de locação de festas infantis.
 Extraia os seguintes dados desta mensagem do cliente:
-Nome do cliente, Tema da festa (se houver), Data da festa (se houver).
+Nome do cliente, Tema da festa (se houver), Data da festa (se houver), Telefone (se houver).
 Responda APENAS um objeto JSON válido, sem markdown, no formato:
-{"nome": "Nome extraído ou nulo", "tema": "Tema ou nulo", "data": "Data ou nulo", "confianca": 95}
-A confiança deve ser de 0 a 100 baseada na clareza dos dados.
+{"nome": "...", "tema": "...", "data": "...", "telefone": "...", "confianca": 95, "motivo_inseguranca": "..."}
+A confiança deve ser de 0 a 100 baseada na clareza dos dados. Se a confiança for menor que 90, preencha o "motivo_inseguranca" (ex: "Não encontrei o mês da festa").
 Mensagem: "${message}"`;
 
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
@@ -86,31 +86,33 @@ serve(async (req) => {
           
         const leadMode = settings?.automations?.lead_creation?.mode || 'manual';
 
-        // 4. Lógica de Roteamento (Routing)
-        if (leadMode === 'automatic' && extractions.confianca >= 90) {
-           // Exemplo de criação automática de Lead
-           const { data: lead } = await supabase.from('leads').insert({
-             company_id: companyId,
-             nome: extractions.nome || 'Cliente (Automação)',
-             origem: eventData.platform || 'webhook'
-           }).select('id').single();
-
-           if (lead && extractions.tema && extractions.data) {
-             // Cria Deal se tivermos as informações vitais
-             await supabase.from('deals').insert({
-               company_id: companyId,
-               lead_id: lead.id,
-               status_funil: 'NOVOS',
-               tema: extractions.tema,
-               data_festa: extractions.data
-             });
-           }
-        } 
-        else if (leadMode === 'semi_auto' || (leadMode === 'automatic' && extractions.confianca < 90)) {
-           // Aqui entrará a Fila de Revisão. Como ainda não temos tabela 'pendencies', 
-           // logamos a extração para revisão manual.
-           console.log("Requer revisão manual. Dados extraídos:", extractions);
-        }
+        // 4. Lógica de Roteamento (Routing) -> Tudo passa pela Inbox primeiro
+        
+        // Em um sistema real, poderíamos até pular a Inbox se "automatic" e confianca alta, 
+        // mas o usuário prefere manter o controle e o log na Inbox.
+        // Criar tarefa na Inbox para revisão humana:
+        await supabase.from('inbox_tasks').insert({
+          company_id: companyId,
+          type: 'AI_REVIEW',
+          status: 'PENDING',
+          priority: extractions.confianca < 90 ? 'HIGH' : 'NORMAL',
+          payload: {
+            conversation_id: eventData.conversation_id,
+            message_id: eventData.message_id,
+            confidence: extractions.confianca || 0,
+            uncertainty_reason: extractions.motivo_inseguranca || null,
+            extracted: {
+              nome: extractions.nome,
+              tema: extractions.tema,
+              data: extractions.data,
+              telefone: extractions.telefone
+            }
+          }
+        });
+        
+        // Se quisermos criar automaticamente sem passar por tela, faríamos aqui 
+        // a checagem if (leadMode === 'automatic' && confianca >= 90) { ... }
+        // mas como definido, a Fila de Revisão centraliza isso.
 
         // 5. Sucesso Final
         await supabase.from('automation_runs').update({

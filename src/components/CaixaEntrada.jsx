@@ -8,9 +8,7 @@ import Card from './ui/Card';
 import Badge from './ui/Badge';
 import Button from './ui/Button';
 import IconButton from './ui/IconButton';
-import Modal from './ui/Modal';
 import EmptyState from './ui/EmptyState';
-import PromptDialog from './ui/PromptDialog';
 
 // Icons
 import { 
@@ -19,47 +17,57 @@ import {
   MessageSquare, 
   Camera, 
   Target, 
-  Check, 
   Send,
   X,
   Phone,
-  Users
+  Bot,
+  AlertTriangle,
+  CheckCircle2,
+  ListTodo
 } from 'lucide-react';
 
 export default function CaixaEntrada() {
+  const [inboxTab, setInboxTab] = useState('ai_review'); // 'ai_review' | 'chats' | 'alerts'
+  
+  const [tasks, setTasks] = useState([]);
   const [conversations, setConversations] = useState([]);
-  const [activeConversation, setActiveConversation] = useState(null);
+  const [alerts, setAlerts] = useState([]);
+  
+  const [activeItem, setActiveItem] = useState(null); // pode ser uma conversa ou uma task
   const [messages, setMessages] = useState([]);
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [inboxTab, setInboxTab] = useState('chats'); // 'chats' ou 'alerts'
-  const [alerts, setAlerts] = useState([]);
-  const [promptConfig, setPromptConfig] = useState(null);
   
-  // Ref para auto-scroll das mensagens
   const messagesEndRef = useRef(null);
 
-  const fetchConversations = async () => {
-    const { data, error } = await supabase
+  const fetchData = async () => {
+    // 1. Fetch AI Tasks
+    const { data: aiTasks } = await supabase
+      .from('inbox_tasks')
+      .select('*')
+      .eq('status', 'PENDING')
+      .eq('type', 'AI_REVIEW')
+      .order('created_at', { ascending: false });
+    
+    if (aiTasks) setTasks(aiTasks);
+
+    // 2. Fetch Conversations
+    const { data: convs } = await supabase
       .from('conversations')
       .select('*')
       .order('last_activity', { ascending: false });
       
-    if (!error && data) {
-      setConversations(data);
-    }
-  };
+    if (convs) setConversations(convs);
 
-  const fetchUpcomingAlerts = async () => {
-    const { data, error } = await supabase
+    // 3. Fetch Alerts (Upcoming parties)
+    const { data: evts } = await supabase
       .from('events')
       .select('*, deals(*, leads(*))');
       
-    if (!error && data) {
+    if (evts) {
       const today = new Date();
       today.setHours(0,0,0,0);
-      
-      const mapped = data
+      const mapped = evts
         .map(evt => {
           const deal = evt.deals;
           if (!deal || !deal.leads) return null;
@@ -87,6 +95,10 @@ export default function CaixaEntrada() {
     }
   };
 
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   const fetchMessages = async (conversationId) => {
     const { data, error } = await supabase
       .from('messages')
@@ -100,104 +112,55 @@ export default function CaixaEntrada() {
   };
 
   useEffect(() => {
-    fetchConversations();
-    fetchUpcomingAlerts();
-    
-    // Realtime Notifications & Updates
-    const msgSubscription = supabase.channel('public:messages')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-        const newMsg = payload.new;
-        
-        // Atualiza a lista de conversas
-        fetchConversations();
-
-        // Se a conversa aberta é a que recebeu a mensagem, atualiza a tela
-        setActiveConversation(prev => {
-          if (prev && prev.id === newMsg.conversation_id) {
-            setMessages(currentMsgs => {
-               // Evita duplicidade se já tiver sido adicionada no envio
-               if (currentMsgs.find(m => m.id === newMsg.id)) return currentMsgs;
-               return [...currentMsgs, newMsg];
-            });
-          }
-          return prev;
-        });
-
-        // Notificação visual simples no navegador (Toast)
-        if (newMsg.direction === 'INBOUND') {
-          // Apenas um alert para fins de feedback visual simples, ideal usar react-hot-toast depois
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(msgSubscription);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (activeConversation) {
-      fetchMessages(activeConversation.id);
+    if (activeItem) {
+      const convId = inboxTab === 'ai_review' ? activeItem.payload?.conversation_id : activeItem.id;
+      if (convId) fetchMessages(convId);
     } else {
       setMessages([]);
     }
-  }, [activeConversation]);
+  }, [activeItem, inboxTab]);
 
-  // Auto-scroll
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
-  const handleReply = async () => {
-    if (!replyText.trim() || !activeConversation) return;
-
-    setIsSending(true);
-    
-    // Optimistic UI update
-    const tempMsg = {
-      id: 'temp-' + Date.now(),
-      conversation_id: activeConversation.id,
-      direction: 'OUTBOUND',
-      content: replyText,
-      created_at: new Date().toISOString()
-    };
-    
-    setMessages(prev => [...prev, tempMsg]);
-    setReplyText('');
-
+  const handleResolveTask = async (task, decision) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const extracted = task.payload.extracted || {};
       
-      const response = await fetch('https://ksbivaolyusmrcblnnfe.supabase.co/functions/v1/send-message', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
-        body: JSON.stringify({
-          conversation_id: activeConversation.id,
-          content: tempMsg.content
-        })
-      });
+      if (decision === 'LEAD' || decision === 'DEAL') {
+         // Create Lead
+         const { data: lead } = await supabase.from('leads').insert({
+           nome: extracted.nome || 'Cliente',
+           telefone: extracted.telefone,
+           origem: 'ai_review'
+         }).select('id').single();
 
-      if (!response.ok) {
-        throw new Error('Falha ao enviar mensagem');
+         if (lead && decision === 'DEAL') {
+           await supabase.from('deals').insert({
+             lead_id: lead.id,
+             status_funil: 'NOVOS',
+             tema: extracted.tema,
+             data_festa: extracted.data
+           });
+         }
       }
 
-      // Atualizamos os dados reais no fetch automático via Realtime, 
-      // ou limpamos o otimista e carregamos a base real
-      fetchMessages(activeConversation.id);
+      // Resolve Task
+      await supabase.from('inbox_tasks').update({
+        status: decision === 'IGNORE' ? 'IGNORED' : 'RESOLVED',
+        resolved_at: new Date().toISOString()
+      }).eq('id', task.id);
+
+      toast.success(decision === 'IGNORE' ? 'Tarefa ignorada' : 'Ação realizada com sucesso!');
+      setActiveItem(null);
+      fetchData();
 
     } catch (err) {
+      toast.error('Erro ao processar tarefa');
       console.error(err);
-      toast.error('Erro ao enviar mensagem.');
-      // Remove the optimistic message on error
-      setMessages(prev => prev.filter(m => m.id !== tempMsg.id));
-      setReplyText(tempMsg.content);
-    } finally {
-      setIsSending(false);
     }
   };
 
@@ -209,157 +172,108 @@ export default function CaixaEntrada() {
     return { icon: MessageCircle, color: 'var(--primary)', bg: 'var(--primary-light)' };
   };
 
-  const handleOpenWhatsApp = async (alert, e) => {
-    if (e) e.stopPropagation();
-    let num = alert.telefone.replace(/\D/g, '');
-    if (!num) { toast.error("Telefone inválido"); return; }
-    if (num.length <= 11) num = '55' + num;
-    
-    const msg = alert.daysLeft === 0
-      ? `Olá ${alert.nome}! 🥳\nChegou o grande dia da sua festa com o tema *${alert.tema}*! Desejamos um evento maravilhoso e inesquecível! Se precisar de qualquer suporte de última hora, estamos à disposição.`
-      : `Olá ${alert.nome}! 🥳\nPassando para lembrar que faltam apenas ${alert.daysLeft} ${alert.daysLeft === 1 ? 'dia' : 'dias'} para a sua festa com o tema *${alert.tema}*!\n\nEstá tudo pronto para o grande dia? Qualquer dúvida ou ajuste, estamos por aqui!`;
-      
-    window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank');
-    
-    // Atualiza lembrete_enviado no supabase
-    await supabase.from('events').update({ lembrete_enviado: true }).eq('id', alert.eventId);
-    
-    window.dispatchEvent(new CustomEvent('app_refresh'));
-    
-    // Atualiza a lista local na hora
-    fetchUpcomingAlerts();
-  };
-
-  const handleCreateLead = () => {
-    if (!activeConversation) return;
-    setPromptConfig({
-      title: 'Novo Lead',
-      message: 'Confirme o nome do cliente:',
-      defaultValue: activeConversation.nome_cliente,
-      icon: Users,
-      onConfirm: async (nome) => {
-        setPromptConfig(null);
-        if (!nome) return;
-
-        const { error } = await supabase.from('leads').insert([{
-          nome: nome,
-          origem: activeConversation.canal,
-        }]);
-
-        if (!error) {
-          toast.success("Lead salvo com sucesso!");
-        } else {
-          toast.error("Erro ao salvar Lead.");
-        }
-      }
-    });
-  };
-
   return (
     <div className={styles.inboxContainer}>
       
-      {/* Coluna Esquerda: Lista de Conversas / Lembretes */}
-      <div className={`${styles.chatList} ${activeConversation ? styles.hideOnMobile : ''}`}>
+      {/* Coluna Esquerda: Lista */}
+      <div className={`${styles.chatList} ${activeItem ? styles.hideOnMobile : ''}`}>
         <div className={styles.chatListHeader}>
-          <h2>Avisos</h2>
+          <h2>Inbox</h2>
         </div>
 
-        {/* Abas Alternadoras */}
+        {/* Abas Alternadoras (Menu) */}
         <div className={styles.tabSelector}>
           <button 
+            className={`${styles.tabBtn} ${inboxTab === 'ai_review' ? styles.active : ''}`}
+            onClick={() => { setInboxTab('ai_review'); setActiveItem(null); }}
+          >
+            <Bot size={16} /> IA
+            {tasks.length > 0 && <span className={`${styles.tabBadge} ${styles.badgeAi}`}>{tasks.length}</span>}
+          </button>
+          <button 
             className={`${styles.tabBtn} ${inboxTab === 'chats' ? styles.active : ''}`}
-            onClick={() => setInboxTab('chats')}
+            onClick={() => { setInboxTab('chats'); setActiveItem(null); }}
           >
             <MessageSquare size={16} /> Chats 
             {conversations.length > 0 && <span className={styles.tabBadge}>{conversations.length}</span>}
           </button>
           <button 
             className={`${styles.tabBtn} ${inboxTab === 'alerts' ? styles.active : ''}`}
-            onClick={() => setInboxTab('alerts')}
+            onClick={() => { setInboxTab('alerts'); setActiveItem(null); }}
           >
-            <Phone size={16} /> Lembretes
+            <AlertTriangle size={16} /> Cobranças
             {alerts.length > 0 && <span className={`${styles.tabBadge} ${styles.badgeAlert}`}>{alerts.length}</span>}
           </button>
         </div>
 
         <div className={styles.listArea}>
-          {inboxTab === 'chats' ? (
-            conversations.length === 0 ? (
-              <EmptyState 
-                icon={Inbox}
-                title="Caixa Vazia"
-                description="Nenhuma conversa registrada ainda."
-              />
-            ) : (
-              conversations.map(conv => {
-                const platform = getPlatformDetails(conv.canal);
-                const PlatformIcon = platform.icon;
-
-                return (
+          {inboxTab === 'ai_review' && (
+             tasks.length === 0 ? (
+                <EmptyState icon={CheckCircle2} title="Tudo limpo!" description="Nenhuma revisão de IA pendente." />
+             ) : (
+                tasks.map(task => (
                   <div 
-                    key={conv.id} 
-                    className={`${styles.chatItem} ${activeConversation?.id === conv.id ? styles.active : ''}`}
-                    onClick={() => setActiveConversation(conv)}
+                    key={task.id} 
+                    className={`${styles.chatItem} ${activeItem?.id === task.id ? styles.active : ''}`}
+                    onClick={() => setActiveItem(task)}
                   >
-                    <div className={styles.chatAvatar} style={{ background: platform.bg, color: platform.color }}>
-                      <PlatformIcon size={20} />
+                    <div className={styles.chatAvatar} style={{ background: '#fdf4ff', color: '#d946ef' }}>
+                      <Bot size={20} />
                     </div>
                     <div className={styles.chatInfo}>
                       <div className={styles.chatInfoTop}>
-                        <span className={styles.chatName}>{conv.nome_cliente}</span>
+                        <span className={styles.chatName}>Nova sugestão de IA</span>
                         <span className={styles.chatTime}>
-                          {new Date(conv.last_activity).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(task.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                       <div className={styles.chatPreview}>
-                        {conv.last_message || 'Nova conversa iniciada...'}
+                        Confiança: {task.payload?.confidence}%
                       </div>
                     </div>
                   </div>
-                );
-              })
-            )
-          ) : (
-            alerts.length === 0 ? (
-              <EmptyState 
-                icon={Phone}
-                title="Tudo em dia!"
-                description="Nenhuma festa confirmada para os próximos 7 dias."
-              />
-            ) : (
-              alerts.map(alert => (
-                <div key={alert.id} className={styles.alertCard}>
-                  <div className={styles.alertHeader}>
-                    <div>
-                      <h4 className={styles.alertTitle}>{alert.nome}</h4>
-                      <p className={styles.alertMeta}>Festa: <strong>{alert.tema}</strong></p>
-                      <p className={styles.alertMeta}>Data: {new Date(alert.data_festa + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
-                    </div>
-                    <Badge variant={alert.daysLeft === 0 ? 'danger' : alert.daysLeft <= 2 ? 'warning' : 'primary'}>
-                      {alert.daysLeft === 0 ? 'É hoje!' : alert.daysLeft === 1 ? 'Falta 1 dia' : `Faltam ${alert.daysLeft} dias`}
-                    </Badge>
-                  </div>
-                  <div className={styles.alertFooter}>
-                    <Button 
-                      variant="primary" 
-                      size="sm" 
-                      icon={Phone} 
-                      onClick={(e) => handleOpenWhatsApp(alert, e)}
-                      style={{ background: '#25D366', border: 'none' }}
+                ))
+             )
+          )}
+
+          {inboxTab === 'chats' && (
+             conversations.length === 0 ? (
+                <EmptyState icon={Inbox} title="Caixa Vazia" description="Nenhuma conversa registrada ainda." />
+             ) : (
+                conversations.map(conv => {
+                  const platform = getPlatformDetails(conv.canal);
+                  const PlatformIcon = platform.icon;
+                  return (
+                    <div 
+                      key={conv.id} 
+                      className={`${styles.chatItem} ${activeItem?.id === conv.id ? styles.active : ''}`}
+                      onClick={() => setActiveItem(conv)}
                     >
-                      Avisar Cliente
-                    </Button>
-                  </div>
-                </div>
-              ))
-            )
+                      <div className={styles.chatAvatar} style={{ background: platform.bg, color: platform.color }}>
+                        <PlatformIcon size={20} />
+                      </div>
+                      <div className={styles.chatInfo}>
+                        <div className={styles.chatInfoTop}>
+                          <span className={styles.chatName}>{conv.nome_cliente}</span>
+                          <span className={styles.chatTime}>
+                            {new Date(conv.last_activity).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <div className={styles.chatPreview}>
+                          {conv.last_message || 'Nova conversa iniciada...'}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+             )
           )}
         </div>
       </div>
 
-      {/* Coluna Direita / Modal Mobile: Leitura e Resposta */}
-      <div className={`${styles.chatDetail} ${activeConversation ? styles.showOnMobile : ''}`}>
-        {activeConversation ? (
+      {/* Coluna Direita: Detalhes */}
+      <div className={`${styles.chatDetail} ${activeItem ? styles.showOnMobile : ''}`}>
+        {activeItem ? (
           <>
             <div className={styles.detailHeader}>
               <div className={styles.detailTitleArea}>
@@ -367,29 +281,19 @@ export default function CaixaEntrada() {
                   icon={X} 
                   variant="ghost" 
                   className={styles.mobileBackBtn}
-                  onClick={() => setActiveConversation(null)}
+                  onClick={() => setActiveItem(null)}
                 />
                 <div>
-                  <h3 className={styles.detailName}>{activeConversation.nome_cliente}</h3>
-                  <Badge size="sm" variant="info" style={{ textTransform: 'capitalize' }}>
-                    Origem: {activeConversation.canal}
-                  </Badge>
+                  <h3 className={styles.detailName}>
+                    {inboxTab === 'ai_review' ? 'Revisão de Sugestão IA' : activeItem.nome_cliente}
+                  </h3>
                 </div>
-              </div>
-              <div className={styles.detailActions}>
-                <Button 
-                  variant="primary" 
-                  icon={Target}
-                  onClick={handleCreateLead}
-                >
-                  Tornar Lead
-                </Button>
               </div>
             </div>
 
             <div className={styles.chatHistory}>
               {messages.length === 0 ? (
-                <EmptyState icon={MessageCircle} title="Carregando..." />
+                <EmptyState icon={MessageCircle} title="Carregando mensagens..." />
               ) : (
                 messages.map(msg => {
                   const isOutbound = msg.direction === 'OUTBOUND';
@@ -405,56 +309,73 @@ export default function CaixaEntrada() {
                   );
                 })
               )}
+              
+              {/* Painel da IA injetado na conversa */}
+              {inboxTab === 'ai_review' && activeItem.payload && (
+                <div className={styles.aiReviewPanel}>
+                   <div className={styles.aiReviewHeader}>
+                     <Bot size={24} color="var(--primary)" />
+                     <div>
+                       <h4>A IA encontrou um possível orçamento</h4>
+                       <p>Confiança: <strong style={{color: activeItem.payload.confidence < 90 ? '#f59e0b' : '#10b981'}}>{activeItem.payload.confidence}%</strong></p>
+                     </div>
+                   </div>
+                   
+                   {activeItem.payload.uncertainty_reason && (
+                     <div className={styles.aiReason}>
+                       <AlertTriangle size={16} />
+                       {activeItem.payload.uncertainty_reason}
+                     </div>
+                   )}
+
+                   <div className={styles.aiFields}>
+                     <div className={styles.aiField}><span>Nome:</span> <strong>{activeItem.payload.extracted?.nome || '-'}</strong></div>
+                     <div className={styles.aiField}><span>Tema:</span> <strong>{activeItem.payload.extracted?.tema || '-'}</strong></div>
+                     <div className={styles.aiField}><span>Data:</span> <strong>{activeItem.payload.extracted?.data || '-'}</strong></div>
+                     <div className={styles.aiField}><span>Telefone:</span> <strong>{activeItem.payload.extracted?.telefone || '-'}</strong></div>
+                   </div>
+
+                   <div className={styles.aiActions}>
+                     <Button variant="outline" size="sm" onClick={() => handleResolveTask(activeItem, 'LEAD')}>
+                       Criar apenas Lead
+                     </Button>
+                     <Button variant="primary" size="sm" onClick={() => handleResolveTask(activeItem, 'DEAL')}>
+                       Criar Lead + Orçamento
+                     </Button>
+                     <Button variant="ghost" color="danger" size="sm" onClick={() => handleResolveTask(activeItem, 'IGNORE')}>
+                       Ignorar
+                     </Button>
+                   </div>
+                </div>
+              )}
+              
               <div ref={messagesEndRef} />
             </div>
-
-            <div className={styles.replyArea}>
-              <textarea 
-                className={styles.replyInput}
-                placeholder="Escreva sua resposta (será enviada direto para o cliente)..."
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleReply();
-                  }
-                }}
-              />
-              <div className={styles.replyActions}>
-                <Button 
-                  variant="primary" 
-                  icon={Send}
-                  onClick={handleReply}
-                  disabled={isSending || !replyText.trim()}
-                >
-                  {isSending ? 'Enviando...' : 'Responder Cliente'}
-                </Button>
+            
+            {inboxTab === 'chats' && (
+              <div className={styles.replyArea}>
+                <textarea 
+                  className={styles.replyInput}
+                  placeholder="Escreva sua resposta..."
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                />
+                <div className={styles.replyActions}>
+                  <Button variant="primary" icon={Send} disabled>Responder (Em breve)</Button>
+                </div>
               </div>
-            </div>
+            )}
           </>
         ) : (
           <div className={styles.emptyDetail}>
             <EmptyState 
-              icon={MessageCircle}
-              title="Selecione uma conversa"
-              description="Clique em uma conversa na lista para ler o histórico e responder o cliente direto pela nossa plataforma."
+              icon={Inbox}
+              title="Selecione um item"
+              description="Escolha uma notificação ou conversa na lista ao lado."
             />
           </div>
         )}
       </div>
-
-      {promptConfig && (
-        <PromptDialog 
-          isOpen={true}
-          title={promptConfig.title}
-          message={promptConfig.message}
-          defaultValue={promptConfig.defaultValue}
-          icon={promptConfig.icon}
-          onConfirm={promptConfig.onConfirm}
-          onCancel={() => setPromptConfig(null)}
-        />
-      )}
     </div>
   );
 }

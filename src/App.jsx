@@ -13,7 +13,7 @@ import IconButton from './components/ui/IconButton';
 import Configuracoes from './components/Configuracoes';
 import Perfil from './components/Perfil';
 import Dashboard from './components/Dashboard';
-import { PartyPopper, Calendar, MessageSquare, BarChart3, Settings, Bell, Search, Plus, ListTodo, Package, User, LogOut, Users, LayoutDashboard, Camera, Menu, ChevronLeft, Zap } from 'lucide-react';
+import { PartyPopper, Calendar, MessageSquare, BarChart3, Settings, Bell, Search, Plus, ListTodo, Package, User, LogOut, Users, LayoutDashboard, Camera, Menu, ChevronLeft, Zap, Inbox } from 'lucide-react';
 import { useCompany } from './hooks/useCompany';
 import Onboarding from './components/Onboarding';
 
@@ -54,6 +54,15 @@ export default function App() {
   };
 
   const [festasProximos7Dias, setFestasProximos7Dias] = useState(0);
+  const [inboxTasksCount, setInboxTasksCount] = useState(0);
+
+  const fetchInboxTasks = async () => {
+    const { count } = await supabase
+      .from('inbox_tasks')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'PENDING');
+    if (count !== null) setInboxTasksCount(count);
+  };
 
   const fetchDeals = async () => {
     setFetchError(null);
@@ -142,6 +151,7 @@ export default function App() {
       fetchDeals();
       fetchClientes();
       fetchAcervo();
+      fetchInboxTasks();
     }
   }, [session]);
 
@@ -150,6 +160,7 @@ export default function App() {
       fetchDeals();
       fetchClientes();
       fetchAcervo();
+      fetchInboxTasks();
     };
     window.addEventListener('app_refresh', handleAppRefresh);
     return () => window.removeEventListener('app_refresh', handleAppRefresh);
@@ -566,10 +577,10 @@ export default function App() {
             <button 
               className={`${styles.navItem} ${activeTab === 'inbox' ? styles.active : ''}`}
               onClick={() => setActiveTab('inbox')}
-              title="Avisos"
+              title="Inbox"
             >
-              <Bell size={20} /> <span className={styles.navLabel}>Avisos</span>
-              {festasProximos7Dias > 0 ? <span className={styles.sidebarBadge}>{festasProximos7Dias}</span> : null}
+              <Inbox size={20} /> <span className={styles.navLabel}>Inbox</span>
+              {(festasProximos7Dias + inboxTasksCount) > 0 ? <span className={styles.sidebarBadge}>{festasProximos7Dias + inboxTasksCount}</span> : null}
             </button>
             <button 
               className={`${styles.navItem} ${activeTab === 'acervo' ? styles.active : ''}`}
