@@ -23,7 +23,12 @@ import {
   Bot,
   AlertTriangle,
   CheckCircle2,
-  ListTodo
+  ListTodo,
+  RefreshCw,
+  Sparkles,
+  MapPin,
+  Calendar,
+  DollarSign
 } from 'lucide-react';
 
 export default function CaixaEntrada() {
@@ -37,6 +42,7 @@ export default function CaixaEntrada() {
   const [messages, setMessages] = useState([]);
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isRecalculating, setIsRecalculating] = useState(false);
   
   const messagesEndRef = useRef(null);
 
@@ -128,13 +134,15 @@ export default function CaixaEntrada() {
 
   const handleResolveTask = async (task, decision) => {
     try {
-      const extracted = task.payload.extracted || {};
+      const crmState = task.payload.crm_state || {};
+      const cliente = crmState.cliente || {};
+      const evento = crmState.evento || {};
       
       if (decision === 'LEAD' || decision === 'DEAL') {
          // Create Lead
          const { data: lead } = await supabase.from('leads').insert({
-           nome: extracted.nome || 'Cliente',
-           telefone: extracted.telefone,
+           nome: cliente.nome || 'Cliente',
+           telefone: cliente.telefone,
            origem: 'ai_review'
          }).select('id').single();
 
@@ -142,8 +150,9 @@ export default function CaixaEntrada() {
            await supabase.from('deals').insert({
              lead_id: lead.id,
              status_funil: 'NOVOS',
-             tema: extracted.tema,
-             data_festa: extracted.data
+             tema: evento.tema,
+             data_festa: evento.data,
+             horario_festa: evento.horario
            });
          }
       }
@@ -161,6 +170,29 @@ export default function CaixaEntrada() {
     } catch (err) {
       toast.error('Erro ao processar tarefa');
       console.error(err);
+    }
+  };
+
+  const handleRecalculateState = async () => {
+    setIsRecalculating(true);
+    try {
+      const convId = activeItem.id;
+      const { data, error } = await supabase.functions.invoke('recalculate-state', {
+        body: { conversation_id: convId }
+      });
+      if (error) throw error;
+      
+      if (data?.crm_state) {
+        setActiveItem({ ...activeItem, crm_state: data.crm_state });
+        toast.success('Ficha Inteligente atualizada!');
+        // Update local list as well
+        setConversations(conversations.map(c => c.id === convId ? { ...c, crm_state: data.crm_state } : c));
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao recalcular estado');
+    } finally {
+      setIsRecalculating(false);
     }
   };
 
@@ -222,13 +254,13 @@ export default function CaixaEntrada() {
                     </div>
                     <div className={styles.chatInfo}>
                       <div className={styles.chatInfoTop}>
-                        <span className={styles.chatName}>Nova sugestão de IA</span>
+                        <span className={styles.chatName}>Alerta IA</span>
                         <span className={styles.chatTime}>
                           {new Date(task.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                       <div className={styles.chatPreview}>
-                        Confiança: {task.payload?.confidence}%
+                        {task.payload?.summary || 'Revisão pendente'}
                       </div>
                     </div>
                   </div>
@@ -285,116 +317,150 @@ export default function CaixaEntrada() {
                 />
                 <div>
                   <h3 className={styles.detailName}>
-                    {inboxTab === 'ai_review' ? 'Revisão de Sugestão IA' : activeItem.nome_cliente}
+                    {inboxTab === 'ai_review' ? 'Revisão de IA' : activeItem.nome_cliente}
                   </h3>
                 </div>
               </div>
+              {inboxTab === 'chats' && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  icon={RefreshCw} 
+                  onClick={handleRecalculateState}
+                  disabled={isRecalculating}
+                >
+                  {isRecalculating ? 'Recalculando...' : 'Atualizar Resumo'}
+                </Button>
+              )}
             </div>
 
-            <div className={styles.chatHistory}>
-              {messages.length === 0 ? (
-                <EmptyState icon={MessageCircle} title="Carregando mensagens..." />
-              ) : (
-                messages.map(msg => {
-                  const isOutbound = msg.direction === 'OUTBOUND';
-                  return (
-                    <div key={msg.id} className={`${styles.messageBubbleWrapper} ${isOutbound ? styles.outbound : styles.inbound}`}>
-                      <div className={`${styles.messageBubble} ${isOutbound ? styles.outboundBubble : styles.inboundBubble}`}>
-                        
-                        {msg.content_type === 'AUDIO' && (
-                          <div className={styles.mediaBubble}>
-                            <div className={styles.mediaHeader}>
-                              <Phone size={14} /> <span>Áudio</span>
-                              {msg.ai_status === 'PROCESSING' && <span className={styles.transcribing}>⏳ Transcrevendo...</span>}
-                              {msg.ai_status === 'COMPLETED' && <span className={styles.transcribing} style={{color: '#10b981'}}>✅ Transcrito</span>}
-                            </div>
-                            {msg.media_url && (
-                              <a href={msg.media_url} target="_blank" rel="noreferrer" className={styles.mediaLink}>▶ Ouvir original</a>
-                            )}
-                            {msg.transcription && (
-                              <div className={styles.transcriptionBox}>
-                                <strong>Transcrição:</strong>
-                                <p>"{msg.transcription}"</p>
+            <div className={styles.detailBody}>
+              <div className={styles.chatHistory}>
+                {messages.length === 0 ? (
+                  <EmptyState icon={MessageCircle} title="Carregando mensagens..." />
+                ) : (
+                  messages.map(msg => {
+                    const isOutbound = msg.direction === 'OUTBOUND';
+                    return (
+                      <div key={msg.id} className={`${styles.messageBubbleWrapper} ${isOutbound ? styles.outbound : styles.inbound}`}>
+                        <div className={`${styles.messageBubble} ${isOutbound ? styles.outboundBubble : styles.inboundBubble}`}>
+                          
+                          {msg.content_type === 'AUDIO' && (
+                            <div className={styles.mediaBubble}>
+                              <div className={styles.mediaHeader}>
+                                <Phone size={14} /> <span>Áudio</span>
+                                {msg.ai_status === 'PROCESSING' && <span className={styles.transcribing}>⏳ Transcrevendo...</span>}
+                                {msg.ai_status === 'COMPLETED' && <span className={styles.transcribing} style={{color: '#10b981'}}>✅ Transcrito</span>}
                               </div>
-                            )}
-                          </div>
-                        )}
-
-                        {msg.content_type === 'IMAGE' && (
-                          <div className={styles.mediaBubble}>
-                            <div className={styles.mediaHeader}>
-                              <Camera size={14} /> <span>Imagem</span>
-                              {msg.ai_status === 'PROCESSING' && <span className={styles.transcribing}>⏳ Analisando...</span>}
+                              {msg.media_url && (
+                                <a href={msg.media_url} target="_blank" rel="noreferrer" className={styles.mediaLink}>▶ Ouvir original</a>
+                              )}
+                              {msg.transcription && (
+                                <div className={styles.transcriptionBox}>
+                                  <strong>Transcrição:</strong>
+                                  <p>"{msg.transcription}"</p>
+                                </div>
+                              )}
                             </div>
-                            {msg.media_url && (
-                              <img src={msg.media_url} alt="Recebida" className={styles.chatImage} />
-                            )}
-                            {msg.transcription && (
-                              <div className={styles.transcriptionBox}>
-                                <strong>Descrição da IA:</strong>
-                                <p>{msg.transcription}</p>
+                          )}
+
+                          {msg.content_type === 'IMAGE' && (
+                            <div className={styles.mediaBubble}>
+                              <div className={styles.mediaHeader}>
+                                <Camera size={14} /> <span>Imagem</span>
+                                {msg.ai_status === 'PROCESSING' && <span className={styles.transcribing}>⏳ Analisando...</span>}
                               </div>
-                            )}
-                          </div>
-                        )}
+                              {msg.media_url && (
+                                <img src={msg.media_url} alt="Recebida" className={styles.chatImage} />
+                              )}
+                              {msg.transcription && (
+                                <div className={styles.transcriptionBox}>
+                                  <strong>Descrição da IA:</strong>
+                                  <p>{msg.transcription}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
 
-                        {(msg.content_type === 'TEXT' || !msg.content_type) && msg.content}
+                          {(msg.content_type === 'TEXT' || !msg.content_type) && msg.content}
 
-                        <span className={styles.messageTimestamp}>
-                          {new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                          <span className={styles.messageTimestamp}>
+                            {new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
                       </div>
+                    );
+                  })
+                )}
+                
+                {/* Painel da IA injetado na conversa */}
+                {inboxTab === 'ai_review' && activeItem.payload && (
+                   <div className={styles.aiReviewPanel}>
+                     <div className={styles.aiReviewHeader}>
+                       <Bot size={24} color="var(--primary)" />
+                       <div>
+                         <h4>Ação Necessária: {activeItem.payload.summary}</h4>
+                       </div>
+                     </div>
+
+                     <div className={styles.aiActions}>
+                       <Button variant="outline" size="sm" onClick={() => handleResolveTask(activeItem, 'LEAD')}>
+                         Criar apenas Lead
+                       </Button>
+                       <Button variant="primary" size="sm" onClick={() => handleResolveTask(activeItem, 'DEAL')}>
+                         Criar Lead + Orçamento
+                       </Button>
+                       <Button variant="ghost" color="danger" size="sm" onClick={() => handleResolveTask(activeItem, 'IGNORE')}>
+                         Ignorar
+                       </Button>
+                     </div>
+                   </div>
+                )}
+                
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Ficha Inteligente (CRM State) Lateral */}
+              {inboxTab === 'chats' && activeItem.crm_state && (
+                <div className={styles.crmStatePanel}>
+                  <div className={styles.crmStateHeader}>
+                    <Sparkles size={16} color="var(--primary)" /> Ficha Inteligente
+                  </div>
+
+                  <div className={styles.crmCard}>
+                    <h5>Cliente</h5>
+                    <p><strong>Nome:</strong> {activeItem.crm_state.cliente?.nome || '-'}</p>
+                    <p><strong>Telefone:</strong> {activeItem.crm_state.cliente?.telefone || '-'}</p>
+                  </div>
+
+                  <div className={styles.crmCard}>
+                    <h5>Evento</h5>
+                    <p><Sparkles size={12}/> <strong>Tema:</strong> {activeItem.crm_state.evento?.tema || '-'}</p>
+                    <p><Calendar size={12}/> <strong>Data:</strong> {activeItem.crm_state.evento?.data || '-'} às {activeItem.crm_state.evento?.horario || '-'}</p>
+                    <p><MapPin size={12}/> <strong>Local:</strong> {activeItem.crm_state.cliente?.bairro || '-'}</p>
+                  </div>
+
+                  <div className={styles.crmCard}>
+                    <h5>Negociação</h5>
+                    <p><DollarSign size={12}/> <strong>Orçamento:</strong> {activeItem.crm_state.orcamento?.valor_desejado ? `R$ ${activeItem.crm_state.orcamento?.valor_desejado}` : '-'}</p>
+                    <p><strong>Intenção:</strong> {activeItem.crm_state.intencao || '-'}</p>
+                  </div>
+
+                  {activeItem.crm_state.objecao && (
+                    <div className={`${styles.crmCard} ${styles.crmObjection}`}>
+                      <h5><AlertTriangle size={12}/> Objeção Detectada</h5>
+                      <p><strong>{activeItem.crm_state.objecao.type}:</strong> {activeItem.crm_state.objecao.message}</p>
                     </div>
-                  );
-                })
-              )}
-              
-              {/* Painel da IA injetado na conversa */}
-              {inboxTab === 'ai_review' && activeItem.payload && (
-                 <div className={styles.aiReviewPanel}>
-                   <div className={styles.aiReviewHeader}>
-                     <Bot size={24} color="var(--primary)" />
-                     <div>
-                       <h4>Intenção: {activeItem.payload.intent === 'PURCHASE' ? '🛒 Fechamento' : activeItem.payload.intent === 'PRICE' ? '💰 Cotação' : activeItem.payload.intent === 'QUESTION' ? '❓ Dúvida' : activeItem.payload.intent === 'COMPLAINT' ? '⚠️ Reclamação' : '🤖 Análise Concluída'}</h4>
-                       <p>Confiança: <strong style={{color: activeItem.payload.confidence < 90 ? '#f59e0b' : '#10b981'}}>{activeItem.payload.confidence}%</strong></p>
-                     </div>
-                   </div>
+                  )}
 
-                   {activeItem.payload.summary && (
-                     <div className={styles.aiSummary}>
-                       <strong>Resumo:</strong> {activeItem.payload.summary}
-                     </div>
-                   )}
-                   
-                   {activeItem.payload.uncertainty_reason && (
-                     <div className={styles.aiReason}>
-                       <AlertTriangle size={16} />
-                       {activeItem.payload.uncertainty_reason}
-                     </div>
-                   )}
-
-                   <div className={styles.aiFields}>
-                     <div className={styles.aiField}><span>Nome:</span> <strong>{activeItem.payload.extracted?.nome || '-'}</strong></div>
-                     <div className={styles.aiField}><span>Tema:</span> <strong>{activeItem.payload.extracted?.tema || '-'}</strong></div>
-                     <div className={styles.aiField}><span>Data:</span> <strong>{activeItem.payload.extracted?.data || '-'}</strong></div>
-                     <div className={styles.aiField}><span>Telefone:</span> <strong>{activeItem.payload.extracted?.telefone || '-'}</strong></div>
-                   </div>
-
-                   <div className={styles.aiActions}>
-                     <Button variant="outline" size="sm" onClick={() => handleResolveTask(activeItem, 'LEAD')}>
-                       Criar apenas Lead
-                     </Button>
-                     <Button variant="primary" size="sm" onClick={() => handleResolveTask(activeItem, 'DEAL')}>
-                       Criar Lead + Orçamento
-                     </Button>
-                     <Button variant="ghost" color="danger" size="sm" onClick={() => handleResolveTask(activeItem, 'IGNORE')}>
-                       Ignorar
-                     </Button>
-                   </div>
+                  {activeItem.crm_state.proxima_acao && (
+                    <div className={`${styles.crmCard} ${styles.crmNextAction}`}>
+                      <h5>Próxima Ação Sugerida</h5>
+                      <p>{activeItem.crm_state.proxima_acao}</p>
+                    </div>
+                  )}
                 </div>
               )}
-              
-              <div ref={messagesEndRef} />
             </div>
             
             {inboxTab === 'chats' && (
