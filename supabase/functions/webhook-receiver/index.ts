@@ -89,10 +89,32 @@ serve(async (req) => {
           const webhook_event = entry.messaging[0];
           const sender_psid = webhook_event.sender.id;
           
-          if (webhook_event.message && webhook_event.message.text) {
-             const messageText = webhook_event.message.text;
+          if (webhook_event.message) {
+             let messageText = webhook_event.message.text || '';
              const providerMessageId = webhook_event.message.mid;
              
+             let mediaType = 'TEXT';
+             let mediaUrl = null;
+
+             if (webhook_event.message.attachments && webhook_event.message.attachments.length > 0) {
+               const attachment = webhook_event.message.attachments[0];
+               if (attachment.type === 'audio') {
+                 mediaType = 'AUDIO';
+                 mediaUrl = attachment.payload?.url;
+                 messageText = '[Áudio]';
+               } else if (attachment.type === 'image') {
+                 mediaType = 'IMAGE';
+                 mediaUrl = attachment.payload?.url;
+                 messageText = '[Imagem]';
+               } else {
+                 mediaType = 'DOCUMENT';
+                 mediaUrl = attachment.payload?.url;
+                 messageText = `[Arquivo: ${attachment.type}]`;
+               }
+             }
+
+             if (!messageText && !mediaUrl) continue;
+
              // Message Service Layer: 
              // 1. Identificar Empresa (Tenant)
              let companyId = null;
@@ -181,7 +203,10 @@ serve(async (req) => {
                    conversation_id: conversation.id,
                    direction: 'INBOUND',
                    content: messageText,
-                   provider_message_id: providerMessageId
+                   provider_message_id: providerMessageId,
+                   content_type: mediaType,
+                   media_url: mediaUrl,
+                   ai_status: mediaType !== 'TEXT' ? 'PENDING' : 'COMPLETED'
                  }).select('id').single();
                  
                  if (!msgError && insertedMsg) {
@@ -201,7 +226,9 @@ serve(async (req) => {
                    message_id: messageId,
                    conversation_id: conversation.id,
                    content: messageText,
-                   platform: 'facebook'
+                   platform: 'facebook',
+                   media_type: mediaType,
+                   media_url: mediaUrl
                  },
                  status: 'PENDING'
                });

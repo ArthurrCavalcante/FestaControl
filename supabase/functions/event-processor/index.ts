@@ -1,33 +1,61 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { encode as base64Encode } from "https://deno.land/std@0.177.0/encoding/base64.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Configurações e chaves do Supabase
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
-async function callGemini(message: string) {
+async function downloadMediaAsBase64(url: string): Promise<{ base64: string, mimeType: string }> {
+  // Nota: Em produção real, se o link for do WhatsApp ou FB requer token no cabeçalho.
+  // Como as URLs temporárias de attachments do Messenger costumam ser públicas (CDN), fetch direto funciona.
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Falha ao baixar mídia: ${response.statusText}`);
+  
+  const arrayBuffer = await response.arrayBuffer();
+  const base64 = base64Encode(arrayBuffer);
+  const mimeType = response.headers.get('content-type') || 'application/octet-stream';
+  
+  return { base64, mimeType };
+}
+
+async function callGemini(messageText: string, mediaPayload?: { base64: string, mimeType: string }) {
   if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY não configurada');
 
   const prompt = `Você é um assistente de CRM de locação de festas infantis.
-Extraia os seguintes dados desta mensagem do cliente:
-Nome do cliente, Tema da festa (se houver), Data da festa (se houver), Telefone (se houver).
+Analise a entrada do cliente (que pode ser texto, áudio ou imagem).
+1. Se for áudio, forneça a transcrição exata na chave "transcricao".
+2. Se for imagem, descreva o tema e detalhes na chave "transcricao".
+3. Gere um resumo em 1 linha focada no que o cliente quer ("resumo").
+4. Classifique a intenção ("intencao") como: PRICE (quer saber preço), PURCHASE (quer fechar/reservar), QUESTION (dúvida aleatória), COMPLAINT (reclamação).
+5. Extraia os dados estruturados: Nome, Tema, Data, Telefone.
 Responda APENAS um objeto JSON válido, sem markdown, no formato:
-{"nome": "...", "tema": "...", "data": "...", "telefone": "...", "confianca": 95, "motivo_inseguranca": "..."}
-A confiança deve ser de 0 a 100 baseada na clareza dos dados. Se a confiança for menor que 90, preencha o "motivo_inseguranca" (ex: "Não encontrei o mês da festa").
-Mensagem: "${message}"`;
+{"transcricao": "...", "resumo": "...", "intencao": "PURCHASE", "nome": "...", "tema": "...", "data": "...", "telefone": "...", "confianca": 95, "motivo_inseguranca": "..."}
+A confiança (0 a 100) deve refletir a clareza dos dados extraídos. Se menor que 90, preencha o "motivo_inseguranca".
+Mensagem do cliente em texto (se houver): "${messageText}"`;
+
+  const parts = [{ text: prompt }];
+
+  if (mediaPayload) {
+    parts.push({
+      inlineData: {
+        mimeType: mediaPayload.mimeType,
+        data: mediaPayload.base64
+      }
+    } as any);
+  }
 
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
+      contents: [{ parts }],
       generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
     })
   });
@@ -42,15 +70,10 @@ Mensagem: "${message}"`;
 }
 
 serve(async (req) => {
-  // CORS
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
     const payload = await req.json();
-    
-    // Suporte ao formato de Webhook do banco de dados do Supabase
     const record = payload.record || payload; 
     
     if (!record || !record.id || !record.company_id) {
@@ -59,38 +82,43 @@ serve(async (req) => {
 
     const { id: eventId, company_id: companyId, type: eventType, payload: eventData } = record;
 
-    // Atualiza status para PROCESSING
     await supabase.from('events_queue').update({ status: 'PROCESSING' }).eq('id', eventId);
 
     if (eventType === 'MESSAGE_RECEIVED') {
-      const messageText = eventData.content;
+      const messageText = eventData.content || '';
+      const mediaType = eventData.media_type || 'TEXT';
+      const mediaUrl = eventData.media_url;
+      const messageId = eventData.message_id;
       
-      // 1. Log Start
       const { data: runLog } = await supabase.from('automation_runs').insert({
         company_id: companyId,
         event_id: eventId,
-        automation_name: 'AI Extraction & Routing',
+        automation_name: 'Media Pipeline & Routing',
         status: 'RUNNING'
       }).select('id').single();
 
       try {
-        // 2. IA Extraction
-        const extractions = await callGemini(messageText);
+        let mediaPayload;
+        if ((mediaType === 'AUDIO' || mediaType === 'IMAGE') && mediaUrl) {
+          if (messageId) {
+             await supabase.from('messages').update({ ai_status: 'PROCESSING' }).eq('id', messageId);
+          }
+          mediaPayload = await downloadMediaAsBase64(mediaUrl);
+        }
 
-        // 3. Buscar Regras da Empresa
-        const { data: settings } = await supabase
-          .from('company_settings')
-          .select('automations')
-          .eq('company_id', companyId)
-          .single();
-          
-        const leadMode = settings?.automations?.lead_creation?.mode || 'manual';
+        const extractions = await callGemini(messageText, mediaPayload);
 
-        // 4. Lógica de Roteamento (Routing) -> Tudo passa pela Inbox primeiro
-        
-        // Em um sistema real, poderíamos até pular a Inbox se "automatic" e confianca alta, 
-        // mas o usuário prefere manter o controle e o log na Inbox.
-        // Criar tarefa na Inbox para revisão humana:
+        // Atualiza a Message com a inteligência gerada
+        if (messageId) {
+          await supabase.from('messages').update({
+            transcription: extractions.transcricao || null,
+            intent: extractions.intencao || null,
+            ai_confidence: extractions.confianca || 0,
+            ai_status: 'COMPLETED'
+          }).eq('id', messageId);
+        }
+
+        // Criar tarefa na Inbox para revisão humana
         await supabase.from('inbox_tasks').insert({
           company_id: companyId,
           type: 'AI_REVIEW',
@@ -98,9 +126,12 @@ serve(async (req) => {
           priority: extractions.confianca < 90 ? 'HIGH' : 'NORMAL',
           payload: {
             conversation_id: eventData.conversation_id,
-            message_id: eventData.message_id,
+            message_id: messageId,
+            media_type: mediaType,
             confidence: extractions.confianca || 0,
             uncertainty_reason: extractions.motivo_inseguranca || null,
+            summary: extractions.resumo || null,
+            intent: extractions.intencao || null,
             extracted: {
               nome: extractions.nome,
               tema: extractions.tema,
@@ -109,12 +140,7 @@ serve(async (req) => {
             }
           }
         });
-        
-        // Se quisermos criar automaticamente sem passar por tela, faríamos aqui 
-        // a checagem if (leadMode === 'automatic' && confianca >= 90) { ... }
-        // mas como definido, a Fila de Revisão centraliza isso.
 
-        // 5. Sucesso Final
         await supabase.from('automation_runs').update({
           status: 'SUCCESS',
           finished_at: new Date().toISOString()
@@ -126,13 +152,15 @@ serve(async (req) => {
         }).eq('id', eventId);
 
       } catch (err) {
-        // Log Error
         if (runLog) {
           await supabase.from('automation_runs').update({
             status: 'ERROR',
             error_message: err.message,
             finished_at: new Date().toISOString()
           }).eq('id', runLog.id);
+        }
+        if (messageId) {
+           await supabase.from('messages').update({ ai_status: 'ERROR' }).eq('id', messageId);
         }
         await supabase.from('events_queue').update({ status: 'FAILED', error: err.message }).eq('id', eventId);
       }

@@ -300,7 +300,46 @@ export default function CaixaEntrada() {
                   return (
                     <div key={msg.id} className={`${styles.messageBubbleWrapper} ${isOutbound ? styles.outbound : styles.inbound}`}>
                       <div className={`${styles.messageBubble} ${isOutbound ? styles.outboundBubble : styles.inboundBubble}`}>
-                        {msg.content}
+                        
+                        {msg.content_type === 'AUDIO' && (
+                          <div className={styles.mediaBubble}>
+                            <div className={styles.mediaHeader}>
+                              <Phone size={14} /> <span>Áudio</span>
+                              {msg.ai_status === 'PROCESSING' && <span className={styles.transcribing}>⏳ Transcrevendo...</span>}
+                              {msg.ai_status === 'COMPLETED' && <span className={styles.transcribing} style={{color: '#10b981'}}>✅ Transcrito</span>}
+                            </div>
+                            {msg.media_url && (
+                              <a href={msg.media_url} target="_blank" rel="noreferrer" className={styles.mediaLink}>▶ Ouvir original</a>
+                            )}
+                            {msg.transcription && (
+                              <div className={styles.transcriptionBox}>
+                                <strong>Transcrição:</strong>
+                                <p>"{msg.transcription}"</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {msg.content_type === 'IMAGE' && (
+                          <div className={styles.mediaBubble}>
+                            <div className={styles.mediaHeader}>
+                              <Camera size={14} /> <span>Imagem</span>
+                              {msg.ai_status === 'PROCESSING' && <span className={styles.transcribing}>⏳ Analisando...</span>}
+                            </div>
+                            {msg.media_url && (
+                              <img src={msg.media_url} alt="Recebida" className={styles.chatImage} />
+                            )}
+                            {msg.transcription && (
+                              <div className={styles.transcriptionBox}>
+                                <strong>Descrição da IA:</strong>
+                                <p>{msg.transcription}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {(msg.content_type === 'TEXT' || !msg.content_type) && msg.content}
+
                         <span className={styles.messageTimestamp}>
                           {new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                         </span>
@@ -312,14 +351,20 @@ export default function CaixaEntrada() {
               
               {/* Painel da IA injetado na conversa */}
               {inboxTab === 'ai_review' && activeItem.payload && (
-                <div className={styles.aiReviewPanel}>
+                 <div className={styles.aiReviewPanel}>
                    <div className={styles.aiReviewHeader}>
                      <Bot size={24} color="var(--primary)" />
                      <div>
-                       <h4>A IA encontrou um possível orçamento</h4>
+                       <h4>Intenção: {activeItem.payload.intent === 'PURCHASE' ? '🛒 Fechamento' : activeItem.payload.intent === 'PRICE' ? '💰 Cotação' : activeItem.payload.intent === 'QUESTION' ? '❓ Dúvida' : activeItem.payload.intent === 'COMPLAINT' ? '⚠️ Reclamação' : '🤖 Análise Concluída'}</h4>
                        <p>Confiança: <strong style={{color: activeItem.payload.confidence < 90 ? '#f59e0b' : '#10b981'}}>{activeItem.payload.confidence}%</strong></p>
                      </div>
                    </div>
+
+                   {activeItem.payload.summary && (
+                     <div className={styles.aiSummary}>
+                       <strong>Resumo:</strong> {activeItem.payload.summary}
+                     </div>
+                   )}
                    
                    {activeItem.payload.uncertainty_reason && (
                      <div className={styles.aiReason}>

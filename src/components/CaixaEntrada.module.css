@@ -454,3 +454,71 @@
   background: #d946ef !important;
   color: white !important;
 }
+
+/* Media Bubbles */
+.mediaBubble {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mediaHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+.transcribing {
+  font-size: 0.75rem;
+  color: var(--warning, #b45309);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.mediaLink {
+  color: inherit;
+  text-decoration: underline;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.transcriptionBox {
+  background: rgba(0,0,0,0.05);
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  border-left: 2px solid currentColor;
+  margin-top: 0.5rem;
+}
+
+.transcriptionBox strong {
+  display: block;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+  opacity: 0.8;
+  text-transform: uppercase;
+}
+
+.transcriptionBox p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.chatImage {
+  max-width: 100%;
+  border-radius: var(--radius-sm);
+  margin-top: 0.25rem;
+}
+
+.aiSummary {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  border-left: 4px solid var(--primary);
+}
