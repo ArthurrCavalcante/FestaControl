@@ -41,19 +41,20 @@ export default function WizardConexao({ onClose, onComplete }) {
     // Importante: NENHUMA alteração de estado (setIsConnecting) ou await antes do FB.login,
     // senão o navegador bloqueia a pop-up!
 
-    window.FB.login(async (response) => {
-      setIsConnecting(true); // Só mostra o loading APÓS a pop-up fechar e o FB responder
+    window.FB.login(function(response) {
+      setIsConnecting(true);
 
       if (response.authResponse && response.authResponse.code) {
         setStep(2);
         
-        try {
-          const { data, error } = await supabase.functions.invoke('complete-whatsapp-signup', {
-            body: { 
-              code: response.authResponse.code, 
-              company_id: settings.company_id 
-            }
-          });
+        supabase.functions.invoke('complete-whatsapp-signup', {
+          body: { 
+            code: response.authResponse.code, 
+            company_id: settings.company_id 
+          }
+        }).then(function(result) {
+          var data = result.data;
+          var error = result.error;
 
           if (error) throw error;
           if (data.error) throw new Error(data.error);
@@ -67,13 +68,13 @@ export default function WizardConexao({ onClose, onComplete }) {
           });
           
           setStep(3);
-        } catch (err) {
+        }).catch(function(err) {
           console.error(err);
           toast.error('Erro ao validar credenciais no servidor: ' + err.message);
           setStep(1);
-        } finally {
+        }).finally(function() {
           setIsConnecting(false);
-        }
+        });
       } else {
         toast.error('Conexão cancelada ou pop-up bloqueado pelo navegador.');
         setIsConnecting(false);
