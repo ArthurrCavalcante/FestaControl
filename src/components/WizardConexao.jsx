@@ -12,40 +12,58 @@ export default function WizardConexao({ onClose, onComplete }) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [diagnostic, setDiagnostic] = useState(null);
 
-  // Lazy Load do Facebook SDK
-  useEffect(() => {
-    if (window.FB) return;
-    
-    window.fbAsyncInit = function() {
-      window.FB.init({
-        appId      : '1559415199175174', // App ID real
-        cookie     : true,
-        xfbml      : true,
-        version    : 'v19.0'
-      });
-    };
-
-    (function(d, s, id){
-       var js, fjs = d.getElementsByTagName(s)[0];
-       if (d.getElementById(id)) {return;}
-       js = d.createElement(s); js.id = id;
-       js.src = "https://connect.facebook.net/en_US/sdk.js";
-       fjs.parentNode.insertBefore(js, fjs);
-     }(document, 'script', 'facebook-jssdk'));
-  }, []);
-
-  const handleFacebookLogin = () => {
-    if (!window.FB) {
-      toast.error("O SDK do Facebook ainda está carregando. Tente novamente em alguns segundos.");
+  // Carrega o SDK do Facebook sob demanda e inicializa
+  const loadFbSdk = () => new Promise((resolve, reject) => {
+    // Se já está pronto, resolve imediatamente
+    if (window.FB) {
+      resolve(window.FB);
       return;
     }
 
-    window.FB.login(async (response) => {
+    const timeout = setTimeout(() => {
+      reject(new Error('Timeout ao carregar o SDK do Facebook. Verifique sua conexão ou desative bloqueadores de anuncios.'));
+    }, 10000); // 10s de timeout
+
+    window.fbAsyncInit = function() {
+      window.FB.init({
+        appId  : '1559415199175174',
+        cookie : true,
+        xfbml  : false,
+        version: 'v19.0'
+      });
+      clearTimeout(timeout);
+      resolve(window.FB);
+    };
+
+    // Injeta o script apenas se ainda não foi injetado
+    if (!document.getElementById('facebook-jssdk')) {
+      const script = document.createElement('script');
+      script.id = 'facebook-jssdk';
+      script.src = 'https://connect.facebook.net/en_US/sdk.js';
+      script.onerror = () => {
+        clearTimeout(timeout);
+        reject(new Error('Falha ao carregar o SDK do Facebook. Desative bloqueadores de anúncios e tente novamente.'));
+      };
+      document.head.appendChild(script);
+    }
+  });
+
+  const handleFacebookLogin = async () => {
+    setIsConnecting(true);
+    let FB;
+    try {
+      FB = await loadFbSdk();
+    } catch(err) {
+      toast.error(err.message);
+      setIsConnecting(false);
+      return;
+    }
+
+    FB.login(async (response) => {
       if (response.authResponse && response.authResponse.code) {
-        setStep(2); // Vai para a tela de carregamento da Edge Function
+        setStep(2);
         
         try {
-          // Chama a Edge Function para trocar o código e persistir os dados
           const { data, error } = await supabase.functions.invoke('complete-whatsapp-signup', {
             body: { 
               code: response.authResponse.code, 
@@ -64,19 +82,20 @@ export default function WizardConexao({ onClose, onComplete }) {
             lastSync: 'Agora'
           });
           
-          setStep(3); // Sucesso / Diagnóstico
+          setStep(3);
         } catch (err) {
           console.error(err);
-          toast.error("Erro ao validar credenciais no servidor.");
+          toast.error('Erro ao validar credenciais no servidor: ' + err.message);
           setStep(1);
         } finally {
           setIsConnecting(false);
         }
       } else {
-        toast.error("Conexão cancelada pelo usuário ou pop-up bloqueado.");
+        toast.error('Conexão cancelada ou pop-up bloqueado pelo navegador.');
+        setIsConnecting(false);
       }
     }, {
-      config_id: '3348520452001695', // Configuration ID real
+      config_id: '3348520452001695',
       response_type: 'code',
       override_default_response_type: true,
       extras: {
