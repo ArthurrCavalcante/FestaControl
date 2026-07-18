@@ -34,13 +34,11 @@ export default function WizardConexao({ onClose, onComplete }) {
      }(document, 'script', 'facebook-jssdk'));
   }, []);
 
-  const handleFacebookLogin = async () => {
+  const handleFacebookLogin = () => {
     if (!window.FB) {
       toast.error("O SDK do Facebook ainda está carregando. Tente novamente em alguns segundos.");
       return;
     }
-
-    setIsConnecting(true);
 
     window.FB.login(async (response) => {
       if (response.authResponse && response.authResponse.code) {
@@ -75,8 +73,7 @@ export default function WizardConexao({ onClose, onComplete }) {
           setIsConnecting(false);
         }
       } else {
-        toast.error("Conexão cancelada pelo usuário.");
-        setIsConnecting(false);
+        toast.error("Conexão cancelada pelo usuário ou pop-up bloqueado.");
       }
     }, {
       config_id: '3348520452001695', // Configuration ID real

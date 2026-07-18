@@ -1,9 +1,31 @@
 import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
-dotenv.config();
+import fs from 'fs';
+import path from 'path';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+const envPath = fs.existsSync(path.resolve(process.cwd(), '.env.local')) 
+  ? path.resolve(process.cwd(), '.env.local')
+  : path.resolve(process.cwd(), '.env');
+
+const envConfig = {};
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf-8');
+  envContent.split(/\r?\n/).forEach(line => {
+    const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+    if (match) {
+      let value = match[2] || '';
+      value = value.trim();
+      if (value.length > 0 && value.charAt(0) === '"' && value.charAt(value.length - 1) === '"') {
+        value = value.substring(1, value.length - 1);
+      }
+      envConfig[match[1]] = value;
+    }
+  });
+}
+
+const supabaseUrl = envConfig.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+// Tenta usar a KEY com poder máximo se existir, senão usa a ANON
+const supabaseKey = envConfig.SUPABASE_SERVICE_ROLE_KEY || envConfig.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function checkQueue() {
