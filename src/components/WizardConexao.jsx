@@ -11,18 +11,9 @@ export default function WizardConexao({ onClose, onComplete }) {
   const [step, setStep] = useState(1);
   const [isConnecting, setIsConnecting] = useState(false);
   const [diagnostic, setDiagnostic] = useState(null);
-
-  // Carrega o SDK do Facebook sob demanda e inicializa
-  const loadFbSdk = () => new Promise((resolve, reject) => {
-    // Se já está pronto, resolve imediatamente
-    if (window.FB) {
-      resolve(window.FB);
-      return;
-    }
-
-    const timeout = setTimeout(() => {
-      reject(new Error('Timeout ao carregar o SDK do Facebook. Verifique sua conexão ou desative bloqueadores de anuncios.'));
-    }, 10000); // 10s de timeout
+  // Carrega o SDK do Facebook assim que o componente monta
+  useEffect(() => {
+    if (window.FB) return;
 
     window.fbAsyncInit = function() {
       window.FB.init({
@@ -31,35 +22,28 @@ export default function WizardConexao({ onClose, onComplete }) {
         xfbml  : false,
         version: 'v19.0'
       });
-      clearTimeout(timeout);
-      resolve(window.FB);
     };
 
-    // Injeta o script apenas se ainda não foi injetado
     if (!document.getElementById('facebook-jssdk')) {
       const script = document.createElement('script');
       script.id = 'facebook-jssdk';
       script.src = 'https://connect.facebook.net/en_US/sdk.js';
-      script.onerror = () => {
-        clearTimeout(timeout);
-        reject(new Error('Falha ao carregar o SDK do Facebook. Desative bloqueadores de anúncios e tente novamente.'));
-      };
       document.head.appendChild(script);
     }
-  });
+  }, []);
 
-  const handleFacebookLogin = async () => {
-    setIsConnecting(true);
-    let FB;
-    try {
-      FB = await loadFbSdk();
-    } catch(err) {
-      toast.error(err.message);
-      setIsConnecting(false);
+  const handleFacebookLogin = () => {
+    if (!window.FB) {
+      toast.error('O SDK do Facebook ainda está carregando. Aguarde alguns segundos e tente novamente.');
       return;
     }
 
-    FB.login(async (response) => {
+    // Importante: NENHUMA alteração de estado (setIsConnecting) ou await antes do FB.login,
+    // senão o navegador bloqueia a pop-up!
+
+    window.FB.login(async (response) => {
+      setIsConnecting(true); // Só mostra o loading APÓS a pop-up fechar e o FB responder
+
       if (response.authResponse && response.authResponse.code) {
         setStep(2);
         
