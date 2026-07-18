@@ -33,6 +33,7 @@ import {
 
 export default function CaixaEntrada() {
   const [inboxTab, setInboxTab] = useState('ai_review'); // 'ai_review' | 'chats' | 'alerts'
+  const [chatFilter, setChatFilter] = useState('ACTIVE'); // 'ALL' | 'NEW' | 'ACTIVE' | 'WAITING' | 'ARCHIVED'
   
   const [tasks, setTasks] = useState([]);
   const [conversations, setConversations] = useState([]);
@@ -269,10 +270,12 @@ export default function CaixaEntrada() {
           )}
 
           {inboxTab === 'chats' && (
-             conversations.length === 0 ? (
-                <EmptyState icon={Inbox} title="Caixa Vazia" description="Nenhuma conversa registrada ainda." />
-             ) : (
-                conversations.map(conv => {
+             <>
+               {conversations.length === 0 ? (
+                  <EmptyState icon={Inbox} title="Caixa Vazia" description="Nenhuma conversa registrada." />
+               ) : (
+                  conversations
+                    .map(conv => {
                   const platform = getPlatformDetails(conv.canal);
                   const PlatformIcon = platform.icon;
                   return (
@@ -298,7 +301,8 @@ export default function CaixaEntrada() {
                     </div>
                   );
                 })
-             )
+               )}
+             </>
           )}
         </div>
       </div>
@@ -322,15 +326,24 @@ export default function CaixaEntrada() {
                 </div>
               </div>
               {inboxTab === 'chats' && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  icon={RefreshCw} 
-                  onClick={handleRecalculateState}
-                  disabled={isRecalculating}
-                >
-                  {isRecalculating ? 'Recalculando...' : 'Atualizar Resumo'}
-                </Button>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <div style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-color)', fontSize: '0.85rem' }}>
+                    {activeItem.status === 'NEW' ? 'Novo' : 
+                     activeItem.status === 'ACTIVE' ? 'Ativo' : 
+                     activeItem.status === 'WAITING_CLIENT' ? 'Aguardando Cliente' :
+                     activeItem.status === 'WAITING_COMPANY' ? 'Aguardando Loja' :
+                     activeItem.status === 'ARCHIVED' ? 'Arquivado' : activeItem.status}
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    icon={RefreshCw} 
+                    onClick={handleRecalculateState}
+                    disabled={isRecalculating}
+                  >
+                    {isRecalculating ? 'Recalculando...' : 'Atualizar Resumo'}
+                  </Button>
+                </div>
               )}
             </div>
 

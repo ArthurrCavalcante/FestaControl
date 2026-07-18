@@ -133,11 +133,21 @@ export default function App() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+      setSession(prev => {
+        if (!prev && session) return session;
+        if (prev && !session) return null;
+        if (prev?.user?.id !== session?.user?.id) return session;
+        return prev;
+      });
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
+      setSession(prev => {
+        if (!prev && session) return session;
+        if (prev && !session) return null;
+        if (prev?.user?.id !== session?.user?.id) return session;
+        return prev;
+      });
       if (event === 'PASSWORD_RECOVERY') {
         setRequirePasswordReset(true);
       }

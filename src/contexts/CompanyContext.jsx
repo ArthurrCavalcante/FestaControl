@@ -12,7 +12,7 @@ export function CompanyProvider({ children }) {
   const fetchSettings = async () => {
     try {
       console.log('fetchSettings iniciada');
-      setLoading(true);
+      if (!settings) setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         console.log('Nenhum usuário logado');
@@ -72,7 +72,10 @@ export function CompanyProvider({ children }) {
       
       if (data) {
         console.log('Company settings encontrados:', data);
-        setSettings(data);
+        setSettings(prev => {
+          if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+          return data;
+        });
         setNeedsOnboarding(false);
         
         // Injeta a cor primária no sistema
@@ -92,8 +95,16 @@ export function CompanyProvider({ children }) {
   useEffect(() => {
     // Escuta evento de auth para carregar as configs só quando logado
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'TOKEN_REFRESHED') return;
+      
+      // Evita refetch desnecessário se já temos settings e é apenas um evento de foco na aba (SIGNED_IN repetido)
       if (session) {
-        fetchSettings();
+        setSettings(prev => {
+          if (!prev) {
+            fetchSettings();
+          }
+          return prev;
+        });
       } else {
         setSettings(null);
         setNeedsOnboarding(false);

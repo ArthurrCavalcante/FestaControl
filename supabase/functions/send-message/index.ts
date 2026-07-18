@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { ProviderFactory } from "../_shared/providers/ProviderFactory.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,6 @@ serve(async (req) => {
   }
 
   try {
-    // 1. Receber Payload
     const { conversation_id, content } = await req.json();
 
     if (!conversation_id || !content) {
@@ -22,34 +22,26 @@ serve(async (req) => {
       });
     }
 
-    // 2. Autenticação Padrão (Verifica JWT do Supabase via authorization header que veio do Frontend)
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Missing Authorization header' }), { status: 401, headers: corsHeaders });
     }
 
-    // Instancia o cliente do Supabase usando a SERVICE_ROLE_KEY para verificar o token com segurança
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Validar sessão do usuário extraindo o token manualmente
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
     if (authError || !user) {
-      console.error('Erro de Autenticação JWT:', authError);
       return new Response(JSON.stringify({ error: 'Unauthorized', details: authError?.message }), { status: 401, headers: corsHeaders });
     }
 
-    // 3. Buscar Dados da Conversa (Canal e Remetente)
-    // Para bypassar RLS se necessário durante a busca estrutural:
-    const supabaseAdmin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-
+    // Buscar Dados da Conversa (Canal, Remetente e Empresa)
     const { data: conversation, error: convError } = await supabaseAdmin
       .from('conversations')
-      .select('remetente_id, canal')
+      .select('remetente_id, canal, company_id')
       .eq('id', conversation_id)
       .single();
 
@@ -57,43 +49,33 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Conversation not found' }), { status: 404, headers: corsHeaders });
     }
 
-    // 4. Identificar o Provedor e Disparar a Mensagem
-    let providerMessageId = null;
+    // Buscar Metadata do Provider
+    const { data: conn } = await supabaseAdmin
+      .from('company_connections')
+      .select('metadata')
+      .eq('company_id', conversation.company_id)
+      .eq('provider', conversation.canal)
+      .single();
 
-    if (conversation.canal === 'facebook') {
-      const PAGE_ACCESS_TOKEN = Deno.env.get('FB_PAGE_ACCESS_TOKEN');
-      
-      if (!PAGE_ACCESS_TOKEN) {
-         throw new Error('FB_PAGE_ACCESS_TOKEN not configured in Supabase Secrets');
-      }
+    const metadata = conn?.metadata || {};
 
-      const fbResponse = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipient: { id: conversation.remetente_id },
-          message: { text: content }
-        })
-      });
+    const provider = ProviderFactory.getProviderForPayload({ object: conversation.canal === 'whatsapp' ? 'whatsapp_business_account' : 'page' });
 
-      const fbResult = await fbResponse.json();
-
-      if (!fbResponse.ok) {
-        console.error('Meta API Error:', fbResult);
-        throw new Error(`Meta API error: ${fbResult.error?.message || 'Unknown error'}`);
-      }
-
-      providerMessageId = fbResult.message_id;
-    } else {
+    if (!provider) {
       return new Response(JSON.stringify({ error: 'Unsupported channel' }), { status: 400, headers: corsHeaders });
     }
 
-    // 5. Salvar a Mensagem Enviada (OUTBOUND) no Banco
+    // Disparar Mensagem pelo Provider
+    const sendResult = await provider.send(conversation.remetente_id, content, metadata);
+
+    // Salvar a Mensagem Enviada (OUTBOUND) no Banco
     const { data: newMsg, error: insertError } = await supabaseAdmin.from('messages').insert({
+      company_id: conversation.company_id,
       conversation_id,
       direction: 'OUTBOUND',
+      sender_type: 'HUMAN',
       content,
-      provider_message_id: providerMessageId
+      provider_message_id: sendResult.providerMessageId
     }).select().single();
 
     if (insertError) throw insertError;
@@ -104,7 +86,6 @@ serve(async (req) => {
       last_activity: new Date().toISOString()
     }).eq('id', conversation_id);
 
-    // Retorna Sucesso
     return new Response(JSON.stringify({ success: true, message: newMsg }), { 
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
     });

@@ -29,6 +29,12 @@ import {
   Check
 } from 'lucide-react';
 
+const isVideo = (urlOrName) => {
+  if (!urlOrName) return false;
+  const lower = urlOrName.toLowerCase();
+  return lower.endsWith('.mp4') || lower.endsWith('.webm') || lower.endsWith('.mov') || lower.includes('video/');
+};
+
 export default function Catalogo() {
   const [fotos, setFotos] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -77,8 +83,8 @@ export default function Catalogo() {
     if (!files.length) return;
     
     files.forEach(file => {
-      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-        toast.error(`Arquivo inválido: ${file.name}. Envie apenas JPG, PNG ou WEBP.`);
+      if (!['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm', 'video/quicktime'].includes(file.type)) {
+        toast.error(`Arquivo inválido: ${file.name}. Envie apenas JPG, PNG, WEBP ou MP4/WEBM/MOV.`);
         return;
       }
       const reader = new FileReader();
@@ -104,66 +110,122 @@ export default function Catalogo() {
     setPreviews(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
   };
 
+  // Comprime a imagem para no máximo 1024px de lado e qualidade 0.7 (reduz de ~5MB para ~100KB)
+  const compressImageForAI = (dataUrl) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1024;
+        let w = img.width;
+        let h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else       { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const compressed = canvas.toDataURL('image/jpeg', 0.7);
+        resolve(compressed.split(',')[1]);
+      };
+      img.onerror = () => resolve(dataUrl.split(',')[1]); // fallback: usa original
+      img.src = dataUrl;
+    });
+  };
+
   const handleAnalyzeAll = async () => {
     if (previews.length === 0) return;
 
     setAnalyzing(true);
-    setUploadProgress({ current: 0, total: previews.length });
-
-    // Busca os temas do acervo para enviar pra IA
-    const { data: acervoData } = await supabase.from('acervo').select('nome, apelidos').eq('categoria', 'Tema').eq('ativo', true);
+    let updated = [...previews];
     
-    let temasCadastrados = [];
-    if (acervoData) {
-      temasCadastrados = acervoData.map(t => ({
-        nome: t.nome,
-        apelidos: t.apelidos || []
-      }));
+    // Filtra os que precisam de análise
+    const itemsToAnalyze = [];
+    for (let i = 0; i < updated.length; i++) {
+      if (updated[i].tema) continue;
+      
+      if (updated[i].file.type.startsWith('video/')) {
+        updated[i].descricao = 'Preencha manualmente para vídeos.';
+        continue;
+      }
+      
+      itemsToAnalyze.push({ index: i, url: updated[i].url });
+      updated[i].analyzing = true;
     }
+    
+    setPreviews([...updated]);
+
+    if (itemsToAnalyze.length === 0) {
+      setAnalyzing(false);
+      return;
+    }
+
+    setUploadProgress({ current: 1, total: 1 }); // Representa 1 lote
+
+    // Busca os temas do acervo
+    const { data: acervoData } = await supabase.from('acervo').select('nome, apelidos').eq('categoria', 'Tema').eq('ativo', true);
+    let temasCadastrados = acervoData ? acervoData.map(t => ({ nome: t.nome, apelidos: t.apelidos || [] })) : [];
 
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
-    let updated = [...previews];
-    for (let i = 0; i < updated.length; i++) {
-      if (updated[i].tema) continue;
-      setUploadProgress({ current: i + 1, total: updated.length });
+    try {
+      // Comprimir todas as imagens do lote
+      const compressedImages = await Promise.all(itemsToAnalyze.map(item => compressImageForAI(item.url)));
       
-      updated[i].analyzing = true;
-      setPreviews([...updated]);
+      const response = await fetch(`${supabaseUrl}/functions/v1/analyze-theme`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          imagesBase64: compressedImages,
+          temasCadastrados: temasCadastrados
+        })
+      });
 
-      try {
-        const base64Data = updated[i].url.split(',')[1];
-        
-        const response = await fetch(`${supabaseUrl}/functions/v1/analyze-theme`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ 
-            imageBase64: base64Data,
-            temasCadastrados: temasCadastrados
-          })
-        });
-
-        if (!response.ok) throw new Error("Erro na análise");
-        const json = await response.json();
-
-        updated[i].tema = json.tema || "Tema não identificado";
-        const partes = [];
-        if (json.cores?.length) partes.push('Cores: ' + json.cores.join(', '));
-        if (json.itens?.length) partes.push('Itens: ' + json.itens.join(', '));
-        updated[i].descricao = partes.join('. ');
-      } catch (e) {
-        console.error("Erro IA na foto", i, e);
-        updated[i].descricao = "Erro ao analisar com IA.";
+      if (response.status === 429) {
+        throw new Error("Limite de IA excedido (429)");
+      }
+      if (!response.ok) {
+        throw new Error(`Erro do servidor (${response.status})`);
       }
       
-      updated[i].analyzing = false;
-      setPreviews([...updated]);
+      const results = await response.json();
+      
+      // O backend agora deve retornar um array de resultados na mesma ordem
+      if (Array.isArray(results)) {
+        results.forEach((json, idx) => {
+          const originalIndex = itemsToAnalyze[idx].index;
+          let temaAI = json.tema || "";
+          if (temaAI.toLowerCase() === "desconhecido" || temaAI === "tema não identificado") {
+            temaAI = "";
+          }
+          updated[originalIndex].tema = temaAI;
+          
+          const partes = [];
+          if (json.cores?.length) partes.push('Cores: ' + json.cores.join(', '));
+          if (json.itens?.length) partes.push('Itens: ' + json.itens.join(', '));
+          if (json._debug_raw) partes.push('RAW: ' + json._debug_raw.substring(0, 50));
+          updated[originalIndex].descricao = partes.join('. ');
+          updated[originalIndex].analyzing = false;
+        });
+      }
+    } catch (e) {
+      console.error("Erro IA no lote", e);
+      itemsToAnalyze.forEach(item => {
+        updated[item.index].descricao = e.message.includes("429") 
+          ? "Limite de IA excedido. Tente novamente mais tarde." 
+          : "Erro ao analisar com IA. Preencha manualmente.";
+        updated[item.index].analyzing = false;
+      });
     }
+
+    setPreviews([...updated]);
     setAnalyzing(false);
   };
 
@@ -288,7 +350,8 @@ export default function Catalogo() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${foto.tema.replace(/[^a-z0-9]/gi, '_')}.jpg`;
+      const ext = isVideo(foto.foto_url) ? 'mp4' : 'jpg';
+      a.download = `${foto.tema.replace(/[^a-z0-9]/gi, '_')}.${ext}`;
       a.click();
       window.URL.revokeObjectURL(url);
     } catch(e) {
@@ -301,7 +364,8 @@ export default function Catalogo() {
     try {
       const res = await fetch(foto.foto_url);
       const blob = await res.blob();
-      const file = new File([blob], `${foto.tema.replace(/[^a-z0-9]/gi, '_')}.jpg`, { type: blob.type });
+      const ext = isVideo(foto.foto_url) ? 'mp4' : 'jpg';
+      const file = new File([blob], `${foto.tema.replace(/[^a-z0-9]/gi, '_')}.${ext}`, { type: blob.type });
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
@@ -450,7 +514,7 @@ export default function Catalogo() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,video/mp4,video/webm,video/quicktime"
             multiple
             style={{ display: 'none' }}
             onChange={handleFileSelect}
@@ -461,7 +525,10 @@ export default function Catalogo() {
               {previews.map((preview) => (
                 <div key={preview.id} className={styles.previewItem}>
                   
-                  <div className={styles.previewImage} style={{ backgroundImage: `url(${preview.url})` }}>
+                  <div className={styles.previewImage} style={preview.file.type.startsWith('video/') ? {} : { backgroundImage: `url(${preview.url})` }}>
+                    {preview.file.type.startsWith('video/') && (
+                      <video src={preview.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted loop autoPlay playsInline />
+                    )}
                     {preview.analyzing && (
                       <div className={styles.analyzingOverlay}>
                         <Loader2 className="spin" size={32} />
@@ -577,12 +644,22 @@ export default function Catalogo() {
                     className={`${styles.photoCard} ${isSelectionMode ? styles.selectable : ''}`}
                     style={{ opacity: isSelectionMode && !selectedFotos.includes(foto.id) ? 0.6 : 1 }}
                   >
-                    <img
-                      src={foto.foto_url}
-                      alt={foto.tema}
-                      loading="lazy"
-                      className={styles.photoImg}
-                    />
+                    {isVideo(foto.foto_url) ? (
+                      <video
+                        src={foto.foto_url}
+                        className={styles.photoImg}
+                        muted loop playsInline
+                        onMouseOver={e => e.target.play().catch(() => {})}
+                        onMouseOut={e => { e.target.pause(); e.target.currentTime = 0; }}
+                      />
+                    ) : (
+                      <img
+                        src={foto.foto_url}
+                        alt={foto.tema}
+                        loading="lazy"
+                        className={styles.photoImg}
+                      />
+                    )}
                     
                     {isSelectionMode && (
                       <div className={`${styles.selectionCheckbox} ${selectedFotos.includes(foto.id) ? styles.checked : styles.unchecked}`}>
@@ -604,11 +681,21 @@ export default function Catalogo() {
       {fotoExpandida && (
         <div className={styles.lightboxOverlay} onClick={() => setFotoExpandida(null)}>
           <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
-            <img
-              src={fotoExpandida.foto_url}
-              alt={fotoExpandida.tema}
-              className={styles.lightboxImg}
-            />
+            {isVideo(fotoExpandida.foto_url) ? (
+              <video
+                src={fotoExpandida.foto_url}
+                controls
+                autoPlay
+                className={styles.lightboxImg}
+                style={{ maxHeight: '70vh', backgroundColor: '#000' }}
+              />
+            ) : (
+              <img
+                src={fotoExpandida.foto_url}
+                alt={fotoExpandida.tema}
+                className={styles.lightboxImg}
+              />
+            )}
             
             <div className={styles.lightboxInfo}>
               {isEditingModal ? (

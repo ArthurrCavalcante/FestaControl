@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { encode as base64Encode } from "https://deno.land/std@0.177.0/encoding/base64.ts";
 import { analyzeConversation } from "../_shared/analyze-conversation.ts";
+import { MediaService } from "../_shared/services/MediaService.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,15 +11,6 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-async function downloadMediaAsBase64(url: string): Promise<{ base64: string, mimeType: string }> {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Falha ao baixar mídia: ${response.statusText}`);
-  const arrayBuffer = await response.arrayBuffer();
-  const base64 = base64Encode(arrayBuffer);
-  const mimeType = response.headers.get('content-type') || 'application/octet-stream';
-  return { base64, mimeType };
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -35,7 +26,8 @@ serve(async (req) => {
     const { id: eventId, company_id: companyId, type: eventType, payload: eventData } = record;
     await supabase.from('events_queue').update({ status: 'PROCESSING' }).eq('id', eventId);
 
-    if (eventType === 'MESSAGE_RECEIVED') {
+    // Event Bus Router
+    if (eventType === 'message.received' || eventType === 'MESSAGE_RECEIVED') {
       const messageText = eventData.content || '';
       const mediaType = eventData.media_type || 'TEXT';
       const mediaUrl = eventData.media_url;
@@ -51,11 +43,12 @@ serve(async (req) => {
 
       try {
         let mediaPayload;
-        if ((mediaType === 'AUDIO' || mediaType === 'IMAGE') && mediaUrl) {
+        if ((mediaType === 'AUDIO' || mediaType === 'IMAGE' || mediaType === 'VIDEO') && mediaUrl) {
           if (messageId) {
              await supabase.from('messages').update({ ai_status: 'PROCESSING' }).eq('id', messageId);
           }
-          mediaPayload = await downloadMediaAsBase64(mediaUrl);
+          // The fb token might need to be fetched from company_connections in the future if it's protected
+          mediaPayload = await MediaService.downloadAndEncode(mediaUrl);
         }
 
         // Fetch current CRM state
