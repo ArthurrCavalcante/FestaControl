@@ -183,13 +183,6 @@ export default function Configuracoes() {
           </form>
         </Card>
       </div>
-
-      {showWizard && (
-        <WizardConexao 
-          onClose={() => setShowWizard(false)}
-          onComplete={fetchConnections}
-        />
-      )}
     </div>
   );
 }
