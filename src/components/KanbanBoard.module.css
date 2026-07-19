@@ -132,23 +132,25 @@
   border-top: 1px solid var(--border);
 }
 
-.whatsappBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.messageBtn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: 6px;
   width: 32px;
   height: 32px;
-  border-radius: var(--radius-md);
-  background: #dcfce7;
-  color: #16a34a;
-  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: var(--transition);
+  transition: all 0.2s ease;
+  padding: 0;
 }
 
-.whatsappBtn:hover {
-  background: #bbf7d0;
-  transform: translateY(-1px);
+.messageBtn:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
 }
 
 .emptyState {

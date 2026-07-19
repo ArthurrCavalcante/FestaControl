@@ -4,8 +4,6 @@ import Button from './ui/Button';
 import { useCompany } from '../hooks/useCompany';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../supabaseClient';
-import WizardConexao from './WizardConexao';
-import { Plug, CheckCircle } from 'lucide-react';
 
 export default function Configuracoes() {
   const { settings, updateSettings, loading } = useCompany();
@@ -17,7 +15,6 @@ export default function Configuracoes() {
     primary_color: '#8b5cf6',
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [showWizard, setShowWizard] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -53,59 +50,50 @@ export default function Configuracoes() {
     toast.success('WhatsApp desconectado.');
   };
 
-  const isConnected = settings?.whatsapp_status === 'connected';
-
   if (loading) return <div style={{ padding: '2rem' }}>Carregando configurações...</div>;
 
   return (
     <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
       <div>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Canais de Atendimento</h2>
+        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Integrações</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
           Conecte seus canais oficiais para receber e enviar mensagens pelo FestaFlow.
         </p>
 
-        {isConnected ? (
-          <Card padding="lg" style={{ border: '1px solid #bbf7d0', background: '#f0fdf4' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ background: '#dcfce7', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <CheckCircle size={24} color="#16a34a" />
-                </div>
-                <div>
-                  <h3 style={{ color: '#166534', margin: 0 }}>WhatsApp Conectado</h3>
-                  <p style={{ color: '#15803d', fontSize: '0.9rem', margin: 0, marginTop: '4px' }}>
-                    Sincronizado e recebendo mensagens.
-                  </p>
-                </div>
+        <Card padding="lg" style={{ border: '1px solid var(--border-color)', background: 'var(--bg-color)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)', width: '40px', height: '40px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '1.2rem' }}>
+                IG
               </div>
-              <Button variant="outline" onClick={handleDesconectar} style={{ color: '#dc2626', borderColor: '#fca5a5' }}>
-                Desconectar
+              <div>
+                <h3 style={{ margin: 0 }}>Instagram Direct Messages</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0, marginTop: '2px' }}>
+                  Via Meta Graph API Oficial
+                </p>
+              </div>
+            </div>
+            
+            <div style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: '8px', fontSize: '0.9rem' }}>
+              <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Para conectar, configure seu Webhook na Meta:</p>
+              <ol style={{ paddingLeft: '1.5rem', margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--text-secondary)' }}>
+                <li>Acesse o painel do seu app <strong>FestasTeT CRM</strong> no Meta for Developers.</li>
+                <li>Vá em <strong>Instagram Graph API</strong> &gt; <strong>Webhooks</strong>.</li>
+                <li>Insira a URL do seu Edge Function (webhook-receiver).</li>
+                <li>Insira o Token de Verificação configurado no Supabase.</li>
+                <li>Assine os eventos de <code>messages</code>.</li>
+              </ol>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.5rem' }}>
+              <Button size="md" onClick={() => window.open('https://developers.facebook.com/apps', '_blank')} variant="outline">
+                Abrir Meta Developers
               </Button>
             </div>
-          </Card>
-        ) : (
-          <Card padding="lg" style={{ textAlign: 'center', border: '1px dashed var(--border-color)', background: 'transparent' }}>
-            <div style={{ marginBottom: '1rem' }}>
-              <p style={{ fontWeight: 600, fontSize: '1.1rem' }}>WhatsApp via Evolution API</p>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                Conecte seu número para a IA e sua equipe responderem diretamente pelo FestaFlow.
-              </p>
-            </div>
-            <Button size="md" icon={Plug} onClick={() => setShowWizard(true)}>
-              Conectar WhatsApp
-            </Button>
-          </Card>
-        )}
+          </div>
+        </Card>
       </div>
-
-      {showWizard && (
-        <WizardConexao 
-          onClose={() => setShowWizard(false)} 
-          onComplete={() => setShowWizard(false)}
-        />
-      )}
 
       <div>
         <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Dados da Empresa</h2>

@@ -190,7 +190,7 @@ export default function FichaCliente({ lead, onClose, onAdvanceStatus, onUpdateL
 
             <div className={styles.headerActions}>
               {lead.status !== 'CANCELADO' && (<Button variant="ghost" color="danger" icon={XOctagon} onClick={() => setShowCancelConfirm(true)}>Cancelar Venda</Button>)}
-              <Button variant="primary" size="lg" icon={MessageCircle} onClick={openWhatsApp} style={{ background: '#25D366', border: 'none' }}>Falar no WhatsApp</Button>
+              <Button variant="primary" size="lg" icon={MessageCircle} onClick={openWhatsApp}>Enviar Mensagem</Button>
             </div>
           </div>
 
