@@ -49,17 +49,11 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Conversation not found' }), { status: 404, headers: corsHeaders });
     }
 
-    // Buscar Metadata do Provider
-    const { data: conn } = await supabaseAdmin
-      .from('company_connections')
-      .select('metadata')
-      .eq('company_id', conversation.company_id)
-      .eq('provider', conversation.canal)
-      .single();
+    // Evolution (single-tenant) não usa company_connections por enquanto.
+    // metadata = {} vazio pois as credenciais estão no Deno.env no provider.
+    const metadata = {};
 
-    const metadata = conn?.metadata || {};
-
-    const provider = ProviderFactory.getProviderForPayload({ object: conversation.canal === 'whatsapp' ? 'whatsapp_business_account' : 'page' });
+    const provider = ProviderFactory.getProviderByName(conversation.canal);
 
     if (!provider) {
       return new Response(JSON.stringify({ error: 'Unsupported channel' }), { status: 400, headers: corsHeaders });

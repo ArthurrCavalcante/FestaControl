@@ -174,6 +174,51 @@ export default function CaixaEntrada() {
     }
   };
 
+  const handleCreateLeadFromConversation = async (conversation) => {
+    try {
+      const crmState = conversation.crm_state || {};
+      const cliente = crmState.cliente || {};
+      const evento = crmState.evento || {};
+      
+      // 1. Criar Lead
+      const { data: lead, error: leadError } = await supabase.from('leads').insert({
+        nome: cliente.nome || conversation.nome_cliente || 'Novo Lead via WhatsApp',
+        telefone: cliente.telefone || (conversation.canal === 'whatsapp' ? conversation.remetente_id.split('@')[0] : null),
+        origem: 'whatsapp'
+      }).select('id').single();
+
+      if (leadError) throw leadError;
+
+      // 2. Criar Deal associado
+      const { data: deal, error: dealError } = await supabase.from('deals').insert({
+        lead_id: lead.id,
+        status_funil: 'NOVOS',
+        tema: evento.tema,
+        data_festa: evento.data,
+        horario_festa: evento.horario
+      }).select('id').single();
+
+      if (dealError) throw dealError;
+
+      // 3. Atualizar a conversation com o lead_id (para esconder o botão, e manter aberta)
+      const { error: updateError } = await supabase.from('conversations').update({
+        lead_id: lead.id
+      }).eq('id', conversation.id);
+
+      if (updateError) throw updateError;
+
+      toast.success('Lead e Negócio criados! A conversa continua aberta.');
+      
+      // Atualiza estado local
+      setActiveItem({ ...activeItem, lead_id: lead.id });
+      fetchData();
+
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao transformar em Lead: ' + err.message);
+    }
+  };
+
   const handleRecalculateState = async () => {
     setIsRecalculating(true);
     try {
@@ -334,6 +379,15 @@ export default function CaixaEntrada() {
                      activeItem.status === 'WAITING_COMPANY' ? 'Aguardando Loja' :
                      activeItem.status === 'ARCHIVED' ? 'Arquivado' : activeItem.status}
                   </div>
+                  {!activeItem.lead_id && (
+                    <Button 
+                      variant="primary" 
+                      size="sm" 
+                      onClick={() => handleCreateLeadFromConversation(activeItem)}
+                    >
+                      Transformar em Lead
+                    </Button>
+                  )}
                   <Button 
                     variant="outline" 
                     size="sm" 

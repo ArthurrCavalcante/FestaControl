@@ -5,8 +5,7 @@ import { useCompany } from '../hooks/useCompany';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../supabaseClient';
 import WizardConexao from './WizardConexao';
-import MonitorIntegracoes from './MonitorIntegracoes';
-import { Plus } from 'lucide-react';
+import { Plug, CheckCircle } from 'lucide-react';
 
 export default function Configuracoes() {
   const { settings, updateSettings, loading } = useCompany();
@@ -18,22 +17,7 @@ export default function Configuracoes() {
     primary_color: '#8b5cf6',
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [whatsappConnection, setWhatsappConnection] = useState(null);
   const [showWizard, setShowWizard] = useState(false);
-  const [loadingConn, setLoadingConn] = useState(true);
-
-  const fetchConnections = async () => {
-    if (!settings?.company_id) return;
-    setLoadingConn(true);
-    const { data } = await supabase
-      .from('company_connections')
-      .select('*')
-      .eq('company_id', settings.company_id)
-      .eq('provider', 'whatsapp')
-      .single();
-    setWhatsappConnection(data);
-    setLoadingConn(false);
-  };
 
   useEffect(() => {
     if (settings) {
@@ -44,7 +28,6 @@ export default function Configuracoes() {
         endereco: settings.endereco || '',
         primary_color: settings.primary_color || '#8b5cf6',
       });
-      fetchConnections();
     }
   }, [settings]);
 
@@ -61,15 +44,16 @@ export default function Configuracoes() {
     }
   };
 
-  const handleRemoveConnection = async () => {
-    if (!whatsappConnection) return;
+  const handleDesconectar = async () => {
     const confirm = window.confirm("Tem certeza que deseja desconectar o WhatsApp?");
     if (!confirm) return;
-
-    await supabase.from('company_connections').delete().eq('id', whatsappConnection.id);
-    setWhatsappConnection(null);
+    
+    // Na fase 1, apenas alteramos o status local. Idealmente chamaria um endpoint na Evolution para logout.
+    await updateSettings({ whatsapp_status: 'disconnected' });
     toast.success('WhatsApp desconectado.');
   };
+
+  const isConnected = settings?.whatsapp_status === 'connected';
 
   if (loading) return <div style={{ padding: '2rem' }}>Carregando configurações...</div>;
 
@@ -82,28 +66,46 @@ export default function Configuracoes() {
           Conecte seus canais oficiais para receber e enviar mensagens pelo FestaFlow.
         </p>
 
-        {loadingConn ? (
-          <Card padding="md"><p>Carregando integrações...</p></Card>
-        ) : whatsappConnection ? (
-          <MonitorIntegracoes 
-            connection={whatsappConnection} 
-            onReconnect={() => setShowWizard(true)}
-            onRemove={handleRemoveConnection}
-          />
+        {isConnected ? (
+          <Card padding="lg" style={{ border: '1px solid #bbf7d0', background: '#f0fdf4' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ background: '#dcfce7', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CheckCircle size={24} color="#16a34a" />
+                </div>
+                <div>
+                  <h3 style={{ color: '#166534', margin: 0 }}>WhatsApp Conectado</h3>
+                  <p style={{ color: '#15803d', fontSize: '0.9rem', margin: 0, marginTop: '4px' }}>
+                    Sincronizado e recebendo mensagens.
+                  </p>
+                </div>
+              </div>
+              <Button variant="outline" onClick={handleDesconectar} style={{ color: '#dc2626', borderColor: '#fca5a5' }}>
+                Desconectar
+              </Button>
+            </div>
+          </Card>
         ) : (
           <Card padding="lg" style={{ textAlign: 'center', border: '1px dashed var(--border-color)', background: 'transparent' }}>
             <div style={{ marginBottom: '1rem' }}>
-              <p style={{ fontWeight: 600, fontSize: '1.1rem' }}>WhatsApp Oficial (Cloud API)</p>
+              <p style={{ fontWeight: 600, fontSize: '1.1rem' }}>WhatsApp via Evolution API</p>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
                 Conecte seu número para a IA e sua equipe responderem diretamente pelo FestaFlow.
               </p>
             </div>
-            <Button icon={Plus} onClick={() => setShowWizard(true)}>
+            <Button size="md" icon={Plug} onClick={() => setShowWizard(true)}>
               Conectar WhatsApp
             </Button>
           </Card>
         )}
       </div>
+
+      {showWizard && (
+        <WizardConexao 
+          onClose={() => setShowWizard(false)} 
+          onComplete={() => setShowWizard(false)}
+        />
+      )}
 
       <div>
         <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Dados da Empresa</h2>

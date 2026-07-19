@@ -7,6 +7,7 @@ export interface NormalizedMessage {
   mediaUrl?: string | null;
   timestamp?: string;
   platform?: string;
+  fromMe?: boolean;
 }
 
 export interface Provider {

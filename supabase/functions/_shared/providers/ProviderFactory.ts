@@ -1,36 +1,29 @@
-export interface NormalizedMessage {
-  platform: string;
-  sender: string;
-  receiver: string;
-  type: string;
-  content: string;
-  media?: {
-    url: string;
-    type: string;
-  };
-  timestamp: string;
-  additionalData?: any;
-}
-
-export interface Provider {
-  platform: string;
-  receive(payload: any): Promise<NormalizedMessage | null>;
-  send(params: { to: string; content: string; connectionId: string; metadata?: any }): Promise<boolean>;
-}
-
-import { FacebookProvider } from './facebook.ts';
-import { WhatsAppProvider } from './whatsapp.ts';
+import { Provider } from './Provider.ts';
+import { EvolutionProvider } from './evolution.ts';
+import { MessengerProvider } from './messenger.ts';
 
 export class ProviderFactory {
-  static getProviderForPayload(payload: any): Provider | null {
-    if (payload.object === 'whatsapp_business_account') {
-      return new WhatsAppProvider();
+  // O Factory decide qual provider usar com base nos headers ou payload (usado pelo webhook)
+  static getProvider(req: Request, payload?: any): Provider | null {
+    if (req.headers.has('x-webhook-secret')) {
+      return new EvolutionProvider();
     }
     
-    if (payload.object === 'page' || payload.object === 'instagram') {
-      return new FacebookProvider();
+    if (payload?.object === 'whatsapp_business_account' || payload?.object === 'page' || payload?.object === 'instagram') {
+      return new MessengerProvider();
     }
     
+    return null;
+  }
+
+  // O Factory decide qual provider usar com base no nome (usado pelo send-message)
+  static getProviderByName(name: string): Provider | null {
+    if (name === 'evolution' || name === 'whatsapp') {
+      return new EvolutionProvider();
+    }
+    if (name === 'messenger' || name === 'facebook') {
+      return new MessengerProvider();
+    }
     return null;
   }
 }
