@@ -78,13 +78,21 @@ export default function Catalogo() {
     fetchFotos();
   }, []);
 
+  const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
+
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
     
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm', 'video/quicktime'];
+    
     files.forEach(file => {
-      if (!['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm', 'video/quicktime'].includes(file.type)) {
+      if (!ALLOWED_TYPES.includes(file.type)) {
         toast.error(`Arquivo inválido: ${file.name}. Envie apenas JPG, PNG, WEBP ou MP4/WEBM/MOV.`);
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`Arquivo muito grande: ${file.name}. O limite é 25 MB.`);
         return;
       }
       const reader = new FileReader();

@@ -65,16 +65,24 @@ export default function Perfil() {
 
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
-    if (!passwordForm.newPassword) return;
+    const pwd = passwordForm.newPassword;
+    if (!pwd) return;
+    if (pwd.length < 8) {
+      toast.error('A senha deve ter no mínimo 8 caracteres.');
+      return;
+    }
+    if (!/[A-Z]/.test(pwd) || !/[a-z]/.test(pwd) || !/[0-9]/.test(pwd)) {
+      toast.error('A senha deve conter letras maiúsculas, minúsculas e números.');
+      return;
+    }
     
     try {
-      const { error } = await supabase.auth.updateUser({ password: passwordForm.newPassword });
+      const { error } = await supabase.auth.updateUser({ password: pwd });
       if (error) throw error;
       toast.success('Senha alterada com sucesso!');
       setPasswordForm({ newPassword: '' });
     } catch (error) {
       toast.error('Erro ao alterar senha.');
-      console.error(error);
     }
   };
 
@@ -135,7 +143,8 @@ export default function Perfil() {
                 value={passwordForm.newPassword}
                 onChange={e => setPasswordForm({ newPassword: e.target.value })}
                 placeholder="Mínimo de 6 caracteres"
-                minLength={6}
+                minLength={8}
+                maxLength={128}
                 style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-color)' }}
               />
             </div>

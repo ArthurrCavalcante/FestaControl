@@ -349,10 +349,18 @@ export default function App() {
 
   const handlePasswordReset = async (e) => {
     e.preventDefault();
+    if (newPassword.length < 8) {
+      toast.error('A senha deve ter no mínimo 8 caracteres.');
+      return;
+    }
+    if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      toast.error('A senha deve conter letras maiúsculas, minúsculas e números.');
+      return;
+    }
     setIsResetting(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) {
-      toast.error('Erro ao atualizar senha: ' + error.message);
+      toast.error('Erro ao atualizar senha.');
     } else {
       toast.success('Senha atualizada com sucesso!');
       setRequirePasswordReset(false);

@@ -1,0 +1,511 @@
+{
+  "communities": {
+    "0": [
+      "ref_react",
+      "src_components_acervo",
+      "src_components_acervo_acervo",
+      "src_components_agenda",
+      "src_components_agenda_status_map",
+      "src_components_baseclientes",
+      "src_components_baseclientes_baseclientes",
+      "src_components_baseclientes_whatsappicon",
+      "src_components_caixaentrada",
+      "src_components_caixaentrada_caixaentrada",
+      "src_components_geradororcamento",
+      "src_components_importarclientesmodal",
+      "src_components_kanbanboard",
+      "src_components_kanbanboard_whatsappicon",
+      "src_components_login",
+      "src_components_monitorintegracoes",
+      "src_components_monitorintegracoes_monitorintegracoes",
+      "src_components_onboarding",
+      "src_components_perfil",
+      "src_components_ui_badge",
+      "src_components_ui_badge_badge",
+      "src_components_ui_button",
+      "src_components_ui_button_button",
+      "src_components_ui_card",
+      "src_components_ui_card_card",
+      "src_components_ui_emptystate",
+      "src_components_ui_emptystate_emptystate",
+      "src_components_ui_modal",
+      "src_components_ui_modal_modal",
+      "src_components_ui_statusdot",
+      "src_components_ui_statusdot_statusdot",
+      "src_constants",
+      "src_constants_pipeline_stages",
+      "src_supabaseclient",
+      "src_supabaseclient_supabase"
+    ],
+    "1": [
+      "supabase_functions_send_message_index",
+      "supabase_functions_send_message_index_corsheaders",
+      "supabase_functions_shared_providers_evolution",
+      "supabase_functions_shared_providers_evolution_evolutionprovider",
+      "supabase_functions_shared_providers_evolution_evolutionprovider_receive",
+      "supabase_functions_shared_providers_evolution_evolutionprovider_send",
+      "supabase_functions_shared_providers_facebook",
+      "supabase_functions_shared_providers_facebook_facebookprovider",
+      "supabase_functions_shared_providers_facebook_facebookprovider_receive",
+      "supabase_functions_shared_providers_facebook_facebookprovider_send",
+      "supabase_functions_shared_providers_facebook_facebookprovider_verifysignature",
+      "supabase_functions_shared_providers_messenger",
+      "supabase_functions_shared_providers_messenger_messengerprovider",
+      "supabase_functions_shared_providers_messenger_messengerprovider_receive",
+      "supabase_functions_shared_providers_messenger_messengerprovider_send",
+      "supabase_functions_shared_providers_provider",
+      "supabase_functions_shared_providers_provider_normalizedmessage",
+      "supabase_functions_shared_providers_provider_provider",
+      "supabase_functions_shared_providers_provider_provider_receive",
+      "supabase_functions_shared_providers_provider_provider_send",
+      "supabase_functions_shared_providers_providerfactory",
+      "supabase_functions_shared_providers_providerfactory_providerfactory",
+      "supabase_functions_shared_providers_providerfactory_providerfactory_getprovider",
+      "supabase_functions_shared_providers_providerfactory_providerfactory_getproviderbyname",
+      "supabase_functions_shared_providers_whatsapp",
+      "supabase_functions_shared_providers_whatsapp_supabase",
+      "supabase_functions_shared_providers_whatsapp_whatsappprovider",
+      "supabase_functions_shared_providers_whatsapp_whatsappprovider_downloadmedia",
+      "supabase_functions_shared_providers_whatsapp_whatsappprovider_receive",
+      "supabase_functions_shared_providers_whatsapp_whatsappprovider_send",
+      "supabase_functions_webhook_receiver_index",
+      "supabase_functions_webhook_receiver_index_corsheaders",
+      "supabase_functions_webhook_receiver_index_supabase",
+      "supabase_functions_webhook_receiver_index_verifymetasignature"
+    ],
+    "2": [
+      "src_app_app",
+      "src_components_catalogo",
+      "src_components_catalogo_catalogo",
+      "src_components_catalogo_isvideo",
+      "src_components_fichacliente",
+      "src_components_fichacliente_fichacliente",
+      "src_components_ui_confirmdialog",
+      "src_components_ui_confirmdialog_confirmdialog",
+      "src_components_ui_errorstate",
+      "src_components_ui_errorstate_errorstate",
+      "src_components_ui_promptdialog",
+      "src_components_ui_promptdialog_promptdialog",
+      "src_components_ui_skeleton",
+      "src_components_ui_skeleton_skeleton",
+      "src_components_ui_spinner",
+      "src_components_ui_spinner_spinner",
+      "src_services_dbservice",
+      "src_services_dbservice_adddealnote",
+      "src_services_dbservice_archivedeal",
+      "src_services_dbservice_archiveevent",
+      "src_services_dbservice_archivelead",
+      "src_services_dbservice_archiverecord",
+      "src_services_dbservice_deletefotocatalogo",
+      "src_services_dbservice_deletemultiplefotoscatalogo",
+      "src_services_dbservice_fetchthemehistory",
+      "src_services_dbservice_fetchunifiedtimeline",
+      "src_services_dbservice_logactivity",
+      "src_services_dbservice_uploaddealfile"
+    ],
+    "3": [
+      "oxlint",
+      "package",
+      "package_devdependencies",
+      "package_devdependencies_oxlint",
+      "package_devdependencies_types_react",
+      "package_devdependencies_types_react_dom",
+      "package_devdependencies_vite",
+      "package_devdependencies_vitejs_plugin_react",
+      "package_name",
+      "package_private",
+      "package_scripts",
+      "package_scripts_build",
+      "package_scripts_dev",
+      "package_scripts_lint",
+      "package_scripts_preview",
+      "package_type",
+      "package_version",
+      "types_react",
+      "types_react_dom",
+      "vite",
+      "vitejs_plugin_react"
+    ],
+    "4": [
+      "src_app",
+      "src_app_acervo",
+      "src_app_agenda",
+      "src_app_automacoes",
+      "src_app_baseclientes",
+      "src_app_caixaentrada",
+      "src_app_catalogo",
+      "src_app_fichacliente",
+      "src_app_geradororcamento",
+      "src_app_kanbanboard",
+      "src_components_confirmeventmodal",
+      "src_components_confirmeventmodal_confirmeventmodal",
+      "src_components_importarclientesmodal_importarclientesmodal",
+      "src_components_login_login",
+      "src_components_onboarding_onboarding",
+      "src_components_perfil_perfil",
+      "src_components_ui_iconbutton",
+      "src_components_ui_iconbutton_iconbutton"
+    ],
+    "5": [
+      "src_components_automacoes",
+      "src_components_automacoes_automacoes",
+      "src_components_automacoes_connections",
+      "src_components_configuracoes",
+      "src_components_configuracoes_configuracoes",
+      "src_components_dashboard",
+      "src_components_dashboard_dashboard",
+      "src_components_geradororcamento_geradororcamento",
+      "src_components_wizardconexao",
+      "src_components_wizardconexao_wizardconexao",
+      "src_contexts_companycontext",
+      "src_contexts_companycontext_companycontext",
+      "src_contexts_companycontext_companyprovider",
+      "src_hooks_usecompany",
+      "src_hooks_usecompany_usecompany",
+      "src_main",
+      "src_services_dbservice_logerror"
+    ],
+    "6": [
+      "lucide_react",
+      "package_dependencies",
+      "package_dependencies_lucide_react",
+      "package_dependencies_react",
+      "package_dependencies_react_dom",
+      "package_dependencies_react_hot_toast",
+      "package_dependencies_supabase_supabase_js",
+      "react",
+      "react_dom",
+      "react_hot_toast",
+      "src_components_agenda_agenda",
+      "src_components_kanbanboard_kanbanboard",
+      "supabase_supabase_js"
+    ],
+    "7": [
+      "supabase_functions_event_processor_index",
+      "supabase_functions_event_processor_index_corsheaders",
+      "supabase_functions_event_processor_index_supabase",
+      "supabase_functions_recalculate_state_index",
+      "supabase_functions_recalculate_state_index_corsheaders",
+      "supabase_functions_recalculate_state_index_supabase",
+      "supabase_functions_shared_analyze_conversation",
+      "supabase_functions_shared_analyze_conversation_analyzeconversation",
+      "supabase_functions_shared_services_mediaservice",
+      "supabase_functions_shared_services_mediaservice_mediaservice",
+      "supabase_functions_shared_services_mediaservice_mediaservice_downloadandencode"
+    ],
+    "8": [
+      "public_manifest",
+      "public_manifest_background_color",
+      "public_manifest_description",
+      "public_manifest_display",
+      "public_manifest_icons",
+      "public_manifest_name",
+      "public_manifest_short_name",
+      "public_manifest_start_url",
+      "public_manifest_theme_color"
+    ],
+    "9": [
+      "oxlintrc",
+      "oxlintrc_plugins",
+      "oxlintrc_rules",
+      "oxlintrc_rules_react_only_export_components",
+      "oxlintrc_rules_react_rules_of_hooks",
+      "oxlintrc_schema",
+      "ref_oxc",
+      "ref_warn"
+    ],
+    "10": [
+      "public_privacy_privacy_policy",
+      "public_privacy_whatsapp_integration",
+      "readme_festaflow",
+      "readme_gemini_api",
+      "readme_react",
+      "readme_supabase",
+      "readme_vercel",
+      "readme_vite"
+    ],
+    "11": [
+      "scratch_check_tables",
+      "scratch_check_tables_check",
+      "scratch_check_tables_env",
+      "scratch_check_tables_envfile",
+      "scratch_check_tables_supabase"
+    ],
+    "12": [
+      "scratch_test_pipeline",
+      "scratch_test_pipeline_envconfig",
+      "scratch_test_pipeline_runscenario",
+      "scratch_test_pipeline_starttests",
+      "scratch_test_pipeline_supabase"
+    ],
+    "13": [
+      "scratch_process_queue",
+      "scratch_process_queue_checkqueue",
+      "scratch_process_queue_envconfig",
+      "scratch_process_queue_supabase"
+    ],
+    "14": [
+      "supabase_functions_event_processor_deno",
+      "supabase_functions_event_processor_deno_imports",
+      "supabase_functions_event_processor_deno_imports_supabase_functions_js",
+      "supabase_functions_event_processor_deno_imports_supabase_server"
+    ],
+    "15": [
+      "scratch_db_check2_check",
+      "scratch_db_check2_mjs_scratch_db_check2",
+      "scratch_db_check2_mjs_scratch_db_check2_supabase"
+    ],
+    "16": [
+      "scratch_db_check3",
+      "scratch_db_check3_check",
+      "scratch_db_check3_supabase"
+    ],
+    "17": [
+      "scratch_test_gemini",
+      "scratch_test_gemini_rationale_11",
+      "scratch_test_gemini_run"
+    ],
+    "18": [
+      "src_assets_hero_bottom_layer",
+      "src_assets_hero_isometric_illustration",
+      "src_assets_hero_top_layer"
+    ],
+    "19": [
+      "index_festaflow_app",
+      "index_main_jsx"
+    ],
+    "20": [
+      "scratch_db_check2_js_scratch_db_check2",
+      "scratch_db_check2_js_scratch_db_check2_supabase"
+    ],
+    "21": [
+      "scratch_test_edge",
+      "scratch_test_edge_testedge"
+    ],
+    "22": [
+      "scratch_test_real",
+      "scratch_test_real_run"
+    ],
+    "23": [
+      "supabase_functions_analyze_theme_index",
+      "supabase_functions_analyze_theme_index_corsheaders"
+    ],
+    "24": [
+      "supabase_functions_complete_whatsapp_signup_index",
+      "supabase_functions_complete_whatsapp_signup_index_corsheaders"
+    ],
+    "25": [
+      "supabase_functions_evolution_connect_index",
+      "supabase_functions_evolution_connect_index_corsheaders"
+    ],
+    "26": [
+      "public_favicon_favicon"
+    ],
+    "27": [
+      "public_icons_bluesky_icon"
+    ],
+    "28": [
+      "public_icons_discord_icon"
+    ],
+    "29": [
+      "public_icons_documentation_icon"
+    ],
+    "30": [
+      "public_icons_github_icon"
+    ],
+    "31": [
+      "public_icons_social_icon"
+    ],
+    "32": [
+      "public_icons_x_icon"
+    ],
+    "33": [
+      "src_assets_react_react_logo"
+    ],
+    "34": [
+      "src_assets_vite_vite_logo"
+    ],
+    "35": [
+      "vite_config"
+    ]
+  },
+  "cohesion": {
+    "0": 0.18823529411764706,
+    "1": 0.10338680926916222,
+    "2": 0.15608465608465608,
+    "3": 0.09523809523809523,
+    "4": 0.12418300653594772,
+    "5": 0.21323529411764705,
+    "6": 0.15384615384615385,
+    "7": 0.23636363636363636,
+    "8": 0.2222222222222222,
+    "9": 0.25,
+    "10": 0.25,
+    "11": 0.4,
+    "12": 0.5,
+    "13": 0.5,
+    "14": 0.5,
+    "15": 0.6666666666666666,
+    "16": 0.6666666666666666,
+    "17": 0.6666666666666666,
+    "18": 1.0,
+    "19": 1.0,
+    "20": 1.0,
+    "21": 1.0,
+    "22": 1.0,
+    "23": 1.0,
+    "24": 1.0,
+    "25": 1.0,
+    "26": 1.0,
+    "27": 1.0,
+    "28": 1.0,
+    "29": 1.0,
+    "30": 1.0,
+    "31": 1.0,
+    "32": 1.0,
+    "33": 1.0,
+    "34": 1.0,
+    "35": 1.0
+  },
+  "gods": [
+    {
+      "id": "ref_react",
+      "label": "react",
+      "degree": 35
+    },
+    {
+      "id": "src_components_ui_button_button",
+      "label": "Button()",
+      "degree": 21
+    },
+    {
+      "id": "src_hooks_usecompany_usecompany",
+      "label": "useCompany()",
+      "degree": 17
+    },
+    {
+      "id": "src_supabaseclient_supabase",
+      "label": "supabase",
+      "degree": 17
+    },
+    {
+      "id": "supabase_functions_shared_providers_provider_provider",
+      "label": "Provider",
+      "degree": 14
+    },
+    {
+      "id": "src_components_ui_card_card",
+      "label": "Card()",
+      "degree": 12
+    },
+    {
+      "id": "src_services_dbservice_logactivity",
+      "label": "logActivity()",
+      "degree": 9
+    },
+    {
+      "id": "src_components_ui_modal_modal",
+      "label": "Modal()",
+      "degree": 8
+    },
+    {
+      "id": "supabase_functions_shared_providers_provider_normalizedmessage",
+      "label": "NormalizedMessage",
+      "degree": 7
+    },
+    {
+      "id": "src_components_fichacliente_fichacliente",
+      "label": "FichaCliente()",
+      "degree": 6
+    }
+  ],
+  "surprises": [
+    {
+      "source": "Agenda()",
+      "target": "react",
+      "source_files": [
+        "src/components/Agenda.jsx",
+        "package.json"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "KanbanBoard()",
+      "target": "react",
+      "source_files": [
+        "src/components/KanbanBoard.jsx",
+        "package.json"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "Privacy Policy",
+      "target": "Supabase",
+      "source_files": [
+        "public/privacy.html",
+        "README.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "App()",
+      "target": "useCompany()",
+      "source_files": [
+        "src/App.jsx",
+        "src/hooks/useCompany.js"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "bridges separate communities"
+    },
+    {
+      "source": "Automacoes()",
+      "target": "useCompany()",
+      "source_files": [
+        "src/components/Automacoes.jsx",
+        "src/hooks/useCompany.js"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "peripheral node `Automacoes()` unexpectedly reaches hub `useCompany()`"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `dependencies` connect `Community 6` to `Community 3`?",
+      "why": "High betweenness centrality (0.104) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `react` connect `Community 0` to `Community 9`, `Community 2`, `Community 4`, `Community 5`?",
+      "why": "High betweenness centrality (0.073) - this node is a cross-community bridge."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `$schema`, `oxc`, `react/rules-of-hooks` to the rest of the system?",
+      "why": "80 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `Community 1` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.10338680926916222 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `Community 3` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.09523809523809523 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `Community 4` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.12418300653594772 - nodes in this community are weakly interconnected."
+    }
+  ]
+}

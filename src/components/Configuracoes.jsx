@@ -37,7 +37,7 @@ export default function Configuracoes() {
     if (success) {
       toast.success('Configurações salvas!');
     } else {
-      toast.error('Erro ao salvar: ' + error);
+      toast.error('Erro ao salvar configurações. Tente novamente.');
     }
   };
 

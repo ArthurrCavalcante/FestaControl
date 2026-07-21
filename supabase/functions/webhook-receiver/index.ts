@@ -7,10 +7,20 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-secret',
-};
+const ALLOWED_ORIGINS = [
+  'https://festaflow-crm.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-secret',
+  };
+}
 
 // Utils para validação HMAC da Meta
 async function verifyMetaSignature(payload: string, signature: string): Promise<boolean> {
@@ -31,6 +41,8 @@ async function verifyMetaSignature(payload: string, signature: string): Promise<
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -168,7 +180,7 @@ serve(async (req) => {
       return new Response('EVENT_RECEIVED', { status: 200, headers: corsHeaders });
     }
   } catch (e) {
-    console.error(e);
+    console.error('Webhook processing error');
     return new Response('Internal Server Error', { status: 500 });
   }
 

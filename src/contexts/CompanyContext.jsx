@@ -11,18 +11,14 @@ export function CompanyProvider({ children }) {
 
   const fetchSettings = async () => {
     try {
-      console.log('fetchSettings iniciada');
       if (!settings) setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.log('Nenhum usuário logado');
         setLoading(false);
         return;
       }
-      console.log('Usuário encontrado:', user.id);
 
       // 1. Busca o perfil do usuário para saber qual é a empresa dele
-      // Usamos limit(1) e order para evitar erro 406 se houver múltiplos perfis
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
@@ -31,25 +27,20 @@ export function CompanyProvider({ children }) {
         .limit(1);
         
       if (profileError) {
-        console.error('Erro ao buscar perfil primário:', profileError);
         throw profileError;
       }
       
       let profile = profiles && profiles.length > 0 ? profiles[0] : null;
-      console.log('Perfil primário (com company_id):', profile);
 
       // Se não encontrou nenhum perfil COM company_id, tenta buscar qualquer um
       if (!profile) {
-        console.log('Buscando perfil de fallback...');
         const { data: fallbackProfiles } = await supabase
           .from('profiles')
           .select('company_id')
           .eq('user_id', user.id)
           .limit(1);
           
-        console.log('Fallback profiles result:', fallbackProfiles);
         if (!fallbackProfiles || fallbackProfiles.length === 0 || !fallbackProfiles[0].company_id) {
-          console.log('Fallback também não tem company_id. Precisamos do Onboarding.');
           setNeedsOnboarding(true);
           setLoading(false);
           return;
@@ -57,7 +48,6 @@ export function CompanyProvider({ children }) {
         profile = fallbackProfiles[0];
       }
 
-      console.log('Buscando company_settings para company_id:', profile.company_id);
       // 2. Busca as configurações específicas da empresa dele
       const { data, error } = await supabase
         .from('company_settings')
@@ -66,12 +56,10 @@ export function CompanyProvider({ children }) {
         .single();
       
       if (error && error.code !== 'PGRST116') {
-        console.error('Erro na query de company_settings:', error);
         throw error;
       }
       
       if (data) {
-        console.log('Company settings encontrados:', data);
         setSettings(prev => {
           if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
           return data;
@@ -83,9 +71,8 @@ export function CompanyProvider({ children }) {
           document.documentElement.style.setProperty('--primary', data.primary_color);
         }
       }
-      console.log('Desativando needsOnboarding e loading');
     } catch (err) {
-      console.error('Erro ao carregar configurações da empresa:', err);
+      console.error('Erro ao carregar configurações da empresa');
       logError(err, 'CompanyContext');
     } finally {
       setLoading(false);
