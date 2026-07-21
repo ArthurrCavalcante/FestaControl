@@ -28,7 +28,9 @@ import {
   Sparkles,
   MapPin,
   Calendar,
-  DollarSign
+  DollarSign,
+  Bell,
+  ArrowLeft
 } from 'lucide-react';
 
 export default function CaixaEntrada() {
@@ -314,6 +316,35 @@ export default function CaixaEntrada() {
              )
           )}
 
+          {inboxTab === 'alerts' && (
+             alerts.length === 0 ? (
+                <EmptyState icon={CheckCircle2} title="Tudo tranquilo!" description="Nenhuma cobrança ou aviso pendente." />
+             ) : (
+                alerts.map(alert => (
+                  <div 
+                    key={alert.id} 
+                    className={`${styles.chatItem} ${activeItem?.id === alert.id ? styles.active : ''}`}
+                    onClick={() => setActiveItem(alert)}
+                  >
+                    <div className={styles.chatAvatar} style={{ background: '#fef2f2', color: '#ef4444' }}>
+                      <Bell size={20} />
+                    </div>
+                    <div className={styles.chatInfo}>
+                      <div className={styles.chatInfoTop}>
+                        <span className={styles.chatName}>{alert.nome}</span>
+                        <span className={styles.chatTime}>
+                          {alert.daysLeft === 0 ? 'Hoje' : `Faltam ${alert.daysLeft} dias`}
+                        </span>
+                      </div>
+                      <div className={styles.chatPreview}>
+                        Lembrete de Pagamento / Festa
+                      </div>
+                    </div>
+                  </div>
+                ))
+             )
+          )}
+
           {inboxTab === 'chats' && (
              <>
                {conversations.length === 0 ? (
@@ -358,15 +389,14 @@ export default function CaixaEntrada() {
           <>
             <div className={styles.detailHeader}>
               <div className={styles.detailTitleArea}>
-                <IconButton 
-                  icon={X} 
-                  variant="ghost" 
-                  className={styles.mobileBackBtn}
-                  onClick={() => setActiveItem(null)}
-                />
+                <Button variant="ghost" className={styles.backButton} onClick={() => setActiveItem(null)}>
+                  <ArrowLeft size={20} />
+                </Button>
                 <div>
-                  <h3 className={styles.detailName}>
-                    {inboxTab === 'ai_review' ? 'Revisão de IA' : activeItem.nome_cliente}
+                  <h3 className={styles.detailTitle}>
+                    {inboxTab === 'ai_review' ? 'Revisão de IA' : 
+                     inboxTab === 'alerts' ? `Aviso: ${activeItem.nome}` : 
+                     activeItem.nome_cliente}
                   </h3>
                 </div>
               </div>
@@ -484,6 +514,27 @@ export default function CaixaEntrada() {
                    </div>
                 )}
                 
+                {inboxTab === 'alerts' && (
+                  <div className={styles.aiReviewPanel} style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+                     <div className={styles.aiReviewHeader}>
+                       <Bell size={24} color="#ef4444" />
+                       <div>
+                         <h4>Festa se aproximando!</h4>
+                         <p style={{ margin: '4px 0 0 0', color: '#7f1d1d', fontSize: '0.85rem' }}>
+                           A festa de <strong>{activeItem.nome}</strong> é em {activeItem.daysLeft === 0 ? 'hoje' : `${activeItem.daysLeft} dias`} ({new Date(activeItem.data_festa + 'T12:00:00').toLocaleDateString('pt-BR')}).
+                         </p>
+                       </div>
+                     </div>
+                     <div className={styles.aiActions} style={{ marginTop: '1rem' }}>
+                       <Button variant="primary" size="sm" icon={MessageCircle} onClick={() => {
+                         alert(`Mensagem de cobrança enviada para ${activeItem.telefone}!`);
+                       }}>
+                         Enviar Mensagem de Cobrança / Confirmação
+                       </Button>
+                     </div>
+                  </div>
+                )}
+
                 <div ref={messagesEndRef} />
               </div>
 

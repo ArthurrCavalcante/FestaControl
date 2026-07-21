@@ -1,4 +1,9 @@
 
+[functions.webhook-receiver]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/webhook-receiver/index.ts"
+
 [functions.event-processor]
 enabled = true
 verify_jwt = false

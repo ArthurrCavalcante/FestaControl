@@ -61,37 +61,11 @@ serve(async (req) => {
         return new Response('Invalid JSON', { status: 400 });
       }
 
-      // Autenticação Evolution API via Header Customizado
-      const isEvolution = req.headers.has('x-webhook-secret');
-      if (isEvolution) {
-        const secret = req.headers.get('x-webhook-secret');
-        if (secret !== Deno.env.get('EVOLUTION_WEBHOOK_SECRET')) {
-          console.warn('Evolution Webhook: Unauthorized. Secret mismatch.');
-          return new Response('Unauthorized', { status: 401 });
-        }
-      } else {
-        // Autenticação Meta HMAC
-        const signature = req.headers.get('x-hub-signature-256');
-        if (!signature || !(await verifyMetaSignature(payloadString, signature))) {
-          console.warn('Meta Webhook: Unauthorized. Signature mismatch.');
-          return new Response('Unauthorized', { status: 401 });
-        }
-      }
-
-      // Se for Evolution e for um evento de atualização de conexão
-      if (isEvolution && payload.event === 'connection.update') {
-        const state = payload.data?.state;
-        if (state) {
-          const status = state === 'open' ? 'connected' : 'disconnected';
-          const { data: firstCompany } = await supabase.from('companies').select('id').limit(1).single();
-          if (firstCompany) {
-             await supabase.from('company_settings')
-               .update({ whatsapp_status: status })
-               .eq('company_id', firstCompany.id);
-             console.log(`Status do WhatsApp atualizado para: ${status}`);
-          }
-        }
-        return new Response('EVENT_RECEIVED', { status: 200, headers: corsHeaders });
+      // Autenticação Meta HMAC
+      const signature = req.headers.get('x-hub-signature-256');
+      if (!signature || !(await verifyMetaSignature(payloadString, signature))) {
+        console.warn('Meta Webhook: Unauthorized. Signature mismatch.');
+        return new Response('Unauthorized', { status: 401 });
       }
 
       // Roteamento para o Provider apropriado
@@ -102,14 +76,18 @@ serve(async (req) => {
         return new Response('EVENT_RECEIVED', { status: 200, headers: corsHeaders });
       }
 
+      // Identificar Empresa (atualmente single-tenant de fato)
+      const { data: company } = await supabase.from('companies').select('id').limit(1).single();
+      if (!company) {
+        console.warn('Nenhuma empresa encontrada.');
+        return new Response('EVENT_RECEIVED', { status: 200, headers: corsHeaders });
+      }
+      const companyId = company.id;
+
       const providerKey = provider.name;
       const messages = await provider.receive(req, rawBody, {});
 
       for (const msg of messages) {
-         // Identificar Empresa
-         const { data: company } = await supabase.from('companies').select('id').limit(1).single();
-         if (!company) continue;
-         const companyId = company.id;
 
          // Busca ou cria Conversation baseada no remetente
          let { data: conversation } = await supabase
@@ -127,7 +105,7 @@ serve(async (req) => {
                  company_id: companyId,
                  canal: providerKey,
                  remetente_id: msg.senderId,
-                 nome_cliente: `WhatsApp (${msg.senderId.split('@')[0]})`,
+                 nome_cliente: `${providerKey} (${msg.senderId.split('@')[0]})`,
                  status: 'NEW',
                  last_message: msg.content,
                  last_activity: new Date().toISOString()

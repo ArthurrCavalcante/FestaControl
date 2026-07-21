@@ -25,7 +25,7 @@ const GeradorOrcamento = lazy(() => import('./components/GeradorOrcamento'));
 const FichaCliente = lazy(() => import('./components/FichaCliente'));
 const BaseClientes = lazy(() => import('./components/BaseClientes'));
 const Agenda = lazy(() => import('./components/Agenda'));
-const Automacoes = lazy(() => import('./components/Automacoes'));
+
 
 export default function App() {
   const [session, setSession] = useState(undefined); // undefined = loading auth
@@ -440,7 +440,6 @@ export default function App() {
           }}
         />;
       if (activeTab === 'configuracoes') return <Configuracoes />;
-      if (activeTab === 'automacoes') return <Automacoes />;
       if (activeTab === 'perfil') return <Perfil />;
       return null;
     };
@@ -608,15 +607,7 @@ export default function App() {
             </button>
         </nav>
         
-        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-          <button 
-            className={`${styles.navItem} ${activeTab === 'automacoes' ? styles.active : ''}`}
-            onClick={() => { setActiveTab('automacoes'); setMobileMenuOpen(false); }}
-            title="Motor"
-          >
-            <Zap size={20} /> <span className={styles.navLabel}>Motor</span>
-          </button>
-        </div>
+
       </aside>
       
       <main className={styles.mainContent}>
@@ -662,7 +653,6 @@ export default function App() {
                activeTab === 'acervo' ? 'Acervo' :
                activeTab === 'catalogo' ? 'Galeria' :
                activeTab === 'configuracoes' ? 'Configurar' :
-               activeTab === 'automacoes' ? 'Motor' :
                activeTab === 'perfil' ? 'Perfil' :
                'FestaFlow'}
             </h1>

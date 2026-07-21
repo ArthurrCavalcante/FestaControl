@@ -55,45 +55,7 @@ export default function Configuracoes() {
   return (
     <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
-      <div>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Integrações</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-          Conecte seus canais oficiais para receber e enviar mensagens pelo FestaFlow.
-        </p>
 
-        <Card padding="lg" style={{ border: '1px solid var(--border-color)', background: 'var(--bg-color)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{ background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)', width: '40px', height: '40px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '1.2rem' }}>
-                IG
-              </div>
-              <div>
-                <h3 style={{ margin: 0 }}>Instagram Direct Messages</h3>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0, marginTop: '2px' }}>
-                  Via Meta Graph API Oficial
-                </p>
-              </div>
-            </div>
-            
-            <div style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: '8px', fontSize: '0.9rem' }}>
-              <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Para conectar, configure seu Webhook na Meta:</p>
-              <ol style={{ paddingLeft: '1.5rem', margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--text-secondary)' }}>
-                <li>Acesse o painel do seu app <strong>FestasTeT CRM</strong> no Meta for Developers.</li>
-                <li>Vá em <strong>Instagram Graph API</strong> &gt; <strong>Webhooks</strong>.</li>
-                <li>Insira a URL do seu Edge Function (webhook-receiver).</li>
-                <li>Insira o Token de Verificação configurado no Supabase.</li>
-                <li>Assine os eventos de <code>messages</code>.</li>
-              </ol>
-            </div>
-            
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.5rem' }}>
-              <Button size="md" onClick={() => window.open('https://developers.facebook.com/apps', '_blank')} variant="outline">
-                Abrir Meta Developers
-              </Button>
-            </div>
-          </div>
-        </Card>
-      </div>
 
       <div>
         <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Dados da Empresa</h2>
