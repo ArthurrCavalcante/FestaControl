@@ -134,6 +134,7 @@ export default function App() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(prev => {
+        if (prev === undefined) return session;
         if (!prev && session) return session;
         if (prev && !session) return null;
         if (prev?.user?.id !== session?.user?.id) return session;
@@ -143,6 +144,7 @@ export default function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(prev => {
+        if (prev === undefined) return session;
         if (!prev && session) return session;
         if (prev && !session) return null;
         if (prev?.user?.id !== session?.user?.id) return session;
