@@ -4,7 +4,13 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Faltando variáveis de ambiente do Supabase (VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY).');
+  console.error(
+    '[FestaFlow] ERRO CRÍTICO: Variáveis de ambiente do Supabase não encontradas.\n' +
+    'Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no painel do Vercel.'
+  );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-anon-key'
+);
