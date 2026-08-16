@@ -22,9 +22,23 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// Secret compartilhado com webhook-receiver para garantir que só chamadas internas
+// (do próprio sistema) conseguem acionar o event-processor.
+const INTERNAL_SECRET = Deno.env.get('INTERNAL_FUNCTION_SECRET');
+
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  // Autenticação por segredo interno — bloqueia qualquer requisição externa
+  const incomingSecret = req.headers.get('x-internal-secret');
+  if (!INTERNAL_SECRET || incomingSecret !== INTERNAL_SECRET) {
+    console.warn('event-processor: Unauthorized request. Missing or invalid x-internal-secret.');
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
   try {
     const payload = await req.json();
@@ -58,7 +72,6 @@ serve(async (req) => {
           if (messageId) {
              await supabase.from('messages').update({ ai_status: 'PROCESSING' }).eq('id', messageId);
           }
-          // The fb token might need to be fetched from company_connections in the future if it's protected
           mediaPayload = await MediaService.downloadAndEncode(mediaUrl);
         }
 
@@ -85,7 +98,7 @@ serve(async (req) => {
         // Update Conversations with new CRM state
         await supabase.from('conversations').update({ crm_state: newState }).eq('id', conversationId);
 
-        // State Diff Engine
+        // State Diff Engine — gera tarefas no inbox quando o estado muda significativamente
         let inboxMessage = null;
         let priority = 'NORMAL';
 

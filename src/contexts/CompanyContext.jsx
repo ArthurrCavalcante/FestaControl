@@ -80,29 +80,33 @@ export function CompanyProvider({ children }) {
   };
 
   useEffect(() => {
-    // Escuta evento de auth para carregar as configs só quando logado
+    let initialized = false;
+
+    // Tenta carregar caso já tenha sessão no reload — sempre roda primeiro
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      initialized = true;
+      if (session) {
+        fetchSettings();
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // Escuta eventos de auth posteriores ao carregamento inicial
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'TOKEN_REFRESHED') return;
-      
-      // Evita refetch desnecessário se já temos settings e é apenas um evento de foco na aba (SIGNED_IN repetido)
+
       if (session) {
-        setSettings(prev => {
-          if (!prev) {
-            fetchSettings();
-          }
-          return prev;
-        });
+        // Só dispara fetchSettings se ainda não inicializado (evita duplicar com getSession acima)
+        // ou se o usuário fez login num evento posterior
+        if (!initialized || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          fetchSettings();
+        }
       } else {
         setSettings(null);
         setNeedsOnboarding(false);
         setLoading(false);
       }
-    });
-    
-    // Tenta carregar caso já tenha sessão no reload
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) fetchSettings();
-      else setLoading(false);
     });
 
     return () => subscription.unsubscribe();

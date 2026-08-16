@@ -26,5 +26,8 @@ dist-ssr
 # Dev Scratch / Test Scripts
 scratch/
 
+# Project archives
+*.zip
+
 
 .vercel

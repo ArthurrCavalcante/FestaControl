@@ -1,13 +1,24 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const ALLOWED_ORIGINS = [
+  'https://festaflow-crm.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
 }
 
 serve(async (req) => {
   // Handle CORS preflight requests
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -25,23 +36,23 @@ serve(async (req) => {
       })
     }
 
-    // Validação de Autenticação JWT bypassada
-    // const authHeader = req.headers.get('Authorization')
-    // if (!authHeader) {
-    //   return new Response(JSON.stringify({ error: 'Missing Authorization header' }), { status: 401, headers: corsHeaders })
-    // }
+    // Validação de Autenticação JWT
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), { status: 401, headers: corsHeaders })
+    }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // const token = authHeader.replace('Bearer ', '')
-    // const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     
-    // if (authError || !user) {
-    //   console.error('Erro de Autenticação JWT:', authError)
-    //   return new Response(JSON.stringify({ error: 'Unauthorized', details: authError?.message }), { status: 401, headers: corsHeaders })
-    // }
+    if (authError || !user) {
+      console.error('Erro de Autenticação JWT:', authError)
+      return new Response(JSON.stringify({ error: 'Unauthorized', details: authError?.message }), { status: 401, headers: corsHeaders })
+    }
 
     // A chave do Gemini agora vive de forma segura no backend (gerenciada pelos secrets do Supabase)
     const apiKey = Deno.env.get('GEMINI_API_KEY')

@@ -49,8 +49,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Conversation not found' }), { status: 404, headers: corsHeaders });
     }
 
-    // Evolution (single-tenant) não usa company_connections por enquanto.
-    // metadata = {} vazio pois as credenciais estão no Deno.env no provider.
+    // As credenciais do provider estão configuradas nas variáveis de ambiente do Supabase.
     const metadata = {};
 
     const provider = ProviderFactory.getProviderByName(conversation.canal);
