@@ -81,8 +81,9 @@ async function dispatchEventProcessor(record: Record<string, unknown>): Promise<
 
   const processorUrl = `${supabaseUrl}/functions/v1/event-processor`;
   
-  // Fire-and-forget: não aguardamos a resposta para não bloquear o retorno ao webhook da Meta
-  fetch(processorUrl, {
+  // Fire-and-forget protegido com EdgeRuntime.waitUntil
+  // Garante que a Edge Function não morra antes do fetch iniciar a requisição no background
+  const fetchPromise = fetch(processorUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -93,6 +94,15 @@ async function dispatchEventProcessor(record: Record<string, unknown>): Promise<
   }).catch(err => {
     console.error('webhook-receiver: Falha ao disparar event-processor:', err.message);
   });
+
+  // @ts-ignore: EdgeRuntime é injetado globalmente pela Supabase
+  if (typeof EdgeRuntime !== 'undefined') {
+    // @ts-ignore
+    EdgeRuntime.waitUntil(fetchPromise);
+  } else {
+    // Fallback local se não estiver no EdgeRuntime (ex: rodando deno run local)
+    await fetchPromise;
+  }
 }
 
 serve(async (req) => {
