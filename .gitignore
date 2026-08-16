@@ -24,11 +24,7 @@ dist-ssr
 *.sw?
 
 # Dev Scratch / Test Scripts
-db_check.js
-db_check_new.js
-seed_data.js
-test_gemini.js
-test_gemini2.js
+scratch/
 
 
 .vercel
