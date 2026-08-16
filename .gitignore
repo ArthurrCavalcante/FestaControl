@@ -29,5 +29,8 @@ scratch/
 # Project archives
 *.zip
 
+# Auto-generated analysis reports
+graphify-out/
+
 
 .vercel
