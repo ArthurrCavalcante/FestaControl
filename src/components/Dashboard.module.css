@@ -1,15 +1,16 @@
 .moduleCard {
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  border: 1px solid var(--border-color, #e2e8f0);
+  transition: all 0.15s ease-out;
+  border: 1px solid var(--border);
+  background-color: var(--surface);
 }
 
 .moduleCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  border-color: var(--primary, #4f46e5);
+  border-color: var(--primary);
+  background-color: var(--surface-hover);
+  box-shadow: var(--shadow-sm);
 }
 
 .moduleCard:active {
-  transform: translateY(0);
+  background-color: var(--surface-secondary);
 }

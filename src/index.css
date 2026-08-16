@@ -2,15 +2,15 @@
 
 :root {
   /* Fundo e Superfície */
-  --bg-color: #f8fafc;
+  --bg-color: #f7f7f8;
   --surface: #ffffff;
-  --surface-hover: #f1f5f9;
+  --surface-hover: #f4f4f5;
   --surface-secondary: #f4f4f5;
 
-  /* Primária */
-  --primary: #6366f1;
-  --primary-hover: #4f46e5;
-  --primary-light: #e0e7ff;
+  /* Primária (Azul Petróleo / Escuro) */
+  --primary: #0e7490;
+  --primary-hover: #0891b2;
+  --primary-light: #cffafe;
 
   /* Semânticas */
   --danger: #ef4444;
@@ -21,27 +21,27 @@
   --warning-light: #fef3c7;
 
   /* Textos */
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --text-tertiary: #94a3b8;
+  --text-primary: #18181b;
+  --text-secondary: #71717a;
+  --text-tertiary: #a1a1aa;
 
   /* Bordas e Sombras */
-  --border: #e2e8f0;
-  --border-focus: #c7d2fe;
+  --border: #e4e4e7;
+  --border-focus: #7dd3fc;
   
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.04);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.05);
-  --shadow-hover: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-hover: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 
-  /* Arredondamentos */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
+  /* Arredondamentos (Menos AI, mais estruturado) */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
   
-  /* Animações */
-  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Animações (Snappy e diretas) */
+  --transition: all 0.15s ease-out;
   /* Layout Variables */
   --header-height: 72px;
   --bottom-nav-height: calc(70px + env(safe-area-inset-bottom, 0px));
@@ -72,7 +72,7 @@ button {
 }
 
 button:not(:disabled):active {
-  transform: scale(0.97);
+  transform: none; /* Removed scaling to avoid bouncy look */
 }
 
 a {
@@ -85,12 +85,10 @@ input, textarea, select {
   outline: none;
 }
 
-/* Glassmorphism utilities */
+/* Glassmorphism utilities - Substituído por cores sólidas */
 .glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
 
 /* Layout Utilities */
