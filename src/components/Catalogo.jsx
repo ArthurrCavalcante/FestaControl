@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
+import { useCompany } from '../hooks/useCompany';
 import styles from './Catalogo.module.css';
 
 import Button from './ui/Button';
@@ -56,6 +57,8 @@ export default function Catalogo() {
   const [confirmAction, setConfirmAction] = useState(null);
   
   const fileInputRef = useRef(null);
+  const { settings } = useCompany();
+  const companyId = settings?.company_id;
 
   const fetchFotos = async () => {
     setIsFetchingFotos(true);
@@ -248,7 +251,8 @@ export default function Catalogo() {
 
         const fileExt = preview.file.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = `fotos/${fileName}`;
+        // Prefixo com company_id garante isolamento por tenant no storage
+        const filePath = companyId ? `${companyId}/${fileName}` : `fotos/${fileName}`;
 
         const { error: uploadError } = await supabase.storage.from('Catalogo').upload(filePath, preview.file);
         if (uploadError) {
