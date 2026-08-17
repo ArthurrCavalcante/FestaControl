@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import styles from './BaseClientes.module.css';
 
 // UI
@@ -13,7 +13,12 @@ import {
   Plus, 
   Upload, 
   Search,
-  Users
+  Users,
+  MoreVertical,
+  FileText,
+  MessageCircle,
+  Eye,
+  Trash2
 } from 'lucide-react';
 
 const WhatsappIcon = ({ size = 18 }) => (
@@ -24,6 +29,18 @@ const WhatsappIcon = ({ size = 18 }) => (
 
 export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcamentoPara, onOpenImportModal }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeMenuId, setActiveMenuId] = useState(null);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setActiveMenuId(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const calcularTempoEspera = (created_at) => {
     if (!created_at) return 'Hoje';
@@ -44,7 +61,15 @@ export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcament
     window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-  // Lógica de Contatos (Leads puros)
+  const getInitials = (name) => {
+    if (!name) return '??';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return (name.substring(0, 2)).toUpperCase();
+  };
+
   const filteredLeads = leads.filter(lead => {
     if (searchTerm && !lead.nome.toLowerCase().includes(searchTerm.toLowerCase()) && !lead.telefone.includes(searchTerm)) {
       return false;
@@ -56,8 +81,8 @@ export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcament
     <div className={styles.container}>
       <div className={styles.header}>
         <div className={styles.headerInfo}>
-          <h2 className={styles.title}>Agenda de Contatos</h2>
-          <span className={styles.badge}>{leads.length} contatos</span>
+          <h2 className={styles.title}>Base de Clientes</h2>
+          <span className={styles.badge}>{leads.length} clientes</span>
         </div>
         <div className={styles.headerActions}>
           <Button variant="secondary" onClick={() => {
@@ -66,7 +91,7 @@ export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcament
             Importar
           </Button>
           <Button variant="primary" icon={Plus} onClick={onCadastrarManual}>
-            Novo Contato
+            Novo Cliente
           </Button>
         </div>
       </div>
@@ -93,7 +118,7 @@ export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcament
               <th>Telefone</th>
               <th>Origem</th>
               <th>Adicionado há</th>
-              <th style={{ textAlign: 'right' }}>Ações</th>
+              <th style={{ textAlign: 'right', width: '80px' }}>Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -103,20 +128,17 @@ export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcament
                 className={styles.tableRow}
               >
                 <td className={styles.clientCell}>
-                  <div>
+                  <div className={styles.avatar}>
+                    {getInitials(lead.nome)}
+                  </div>
+                  <div className={styles.clientInfo}>
                     <strong className={styles.clientName}>{lead.nome}</strong>
+                    <span className={styles.clientSub}>Cliente há {calcularTempoEspera(lead.created_at)}</span>
                   </div>
                 </td>
                 <td>
                   <div className={styles.contactCell}>
                     {lead.telefone}
-                    <IconButton 
-                      icon={WhatsappIcon}
-                      variant="ghost"
-                      color="success"
-                      onClick={(e) => openWhatsApp(e, lead.telefone, lead.nome)}
-                      title="Chamar no WhatsApp"
-                    />
                   </div>
                 </td>
                 <td style={{ color: 'var(--text-secondary)' }}>{lead.origem || '-'}</td>
@@ -125,10 +147,43 @@ export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcament
                     {calcularTempoEspera(lead.created_at)}
                   </span>
                 </td>
-                <td style={{ textAlign: 'right' }}>
-                  <Button variant="primary" size="sm" onClick={(e) => { e.stopPropagation(); onGerarOrcamentoPara(lead); }}>
-                    Gerar Orçamento
-                  </Button>
+                <td style={{ textAlign: 'right', position: 'relative' }}>
+                  <IconButton 
+                    icon={MoreVertical}
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveMenuId(activeMenuId === lead.id ? null : lead.id);
+                    }}
+                  />
+                  {activeMenuId === lead.id && (
+                    <div 
+                      ref={menuRef}
+                      style={{
+                        position: 'absolute',
+                        right: '40px',
+                        top: '10px',
+                        background: 'var(--surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-md)',
+                        boxShadow: 'var(--shadow-lg)',
+                        zIndex: 100,
+                        minWidth: '200px',
+                        padding: '0.5rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.25rem',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <button style={{ padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', borderRadius: '4px', cursor: 'pointer', textAlign: 'left', fontSize: '0.9rem', color: 'var(--text-primary)' }} onClick={() => { setActiveMenuId(null); toast('Visualizar cliente em breve'); }} onMouseEnter={(e) => e.target.style.background = 'var(--surface-hover)'} onMouseLeave={(e) => e.target.style.background = 'transparent'}><Eye size={16}/> Ver cliente</button>
+                      <button style={{ padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', borderRadius: '4px', cursor: 'pointer', textAlign: 'left', fontSize: '0.9rem', color: 'var(--text-primary)' }} onClick={() => { setActiveMenuId(null); toast('Editar cliente em breve'); }} onMouseEnter={(e) => e.target.style.background = 'var(--surface-hover)'} onMouseLeave={(e) => e.target.style.background = 'transparent'}><Users size={16}/> Editar cliente</button>
+                      <button style={{ padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', borderRadius: '4px', cursor: 'pointer', textAlign: 'left', fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 500 }} onClick={() => { setActiveMenuId(null); onGerarOrcamentoPara(lead); }} onMouseEnter={(e) => e.target.style.background = 'var(--primary-light)'} onMouseLeave={(e) => e.target.style.background = 'transparent'}><FileText size={16}/> Gerar orçamento</button>
+                      <button style={{ padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', borderRadius: '4px', cursor: 'pointer', textAlign: 'left', fontSize: '0.9rem', color: 'var(--success)' }} onClick={(e) => { setActiveMenuId(null); openWhatsApp(e, lead.telefone, lead.nome); }} onMouseEnter={(e) => e.target.style.background = 'var(--success-light)'} onMouseLeave={(e) => e.target.style.background = 'transparent'}><MessageCircle size={16}/> Enviar WhatsApp</button>
+                      <div style={{ height: '1px', background: 'var(--border)', margin: '0.25rem 0' }}></div>
+                      <button style={{ padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', borderRadius: '4px', cursor: 'pointer', textAlign: 'left', fontSize: '0.9rem', color: 'var(--danger)' }} onClick={() => { setActiveMenuId(null); toast('Excluir cliente em breve'); }} onMouseEnter={(e) => e.target.style.background = 'var(--danger-light)'} onMouseLeave={(e) => e.target.style.background = 'transparent'}><Trash2 size={16}/> Excluir</button>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
@@ -139,9 +194,9 @@ export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcament
           <div style={{ padding: '3rem' }}>
             <EmptyState 
               icon={Users}
-              title={leads.length === 0 ? "Agenda vazia" : "Nenhum contato encontrado"}
+              title={leads.length === 0 ? "Base vazia" : "Nenhum contato encontrado"}
               description={leads.length === 0 
-                ? "Sua base de contatos está vazia. Adicione ou importe clientes para começar." 
+                ? "Sua base de clientes está vazia. Adicione ou importe clientes para começar." 
                 : "Não encontramos nenhum registro na sua busca."}
               action={leads.length === 0 ? {
                 label: "Importar Contatos",
@@ -163,22 +218,24 @@ export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcament
           >
             <div className={styles.mobileCardContent}>
               <div className={styles.mobileCardHeader}>
-                <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div className={styles.avatar} style={{ width: '32px', height: '32px', fontSize: '0.8rem' }}>
+                    {getInitials(lead.nome)}
+                  </div>
                   <h3 className={styles.mobileClientName}>{lead.nome}</h3>
                 </div>
-                <Button variant="primary" size="sm" onClick={(e) => { e.stopPropagation(); onGerarOrcamentoPara(lead); }}>
-                  Orçar
-                </Button>
+                <IconButton 
+                  icon={MoreVertical}
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toast('Use a versão desktop para mais opções no momento');
+                  }}
+                />
               </div>
               <div className={styles.mobileCardBody}>
                 <div className={styles.contactCell}>
                   {lead.telefone}
-                  <IconButton 
-                    icon={WhatsappIcon}
-                    variant="ghost"
-                    color="success"
-                    onClick={(e) => openWhatsApp(e, lead.telefone, lead.nome)}
-                  />
                 </div>
               </div>
               <div className={styles.mobileCardFooter}>
@@ -208,7 +265,6 @@ export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcament
           />
         )}
       </div>
-
     </div>
   );
 }

@@ -100,13 +100,15 @@
 }
 
 .table th {
-  padding: 1rem 1.5rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  font-size: 0.85rem;
   border-bottom: 1px solid var(--border);
+}
+
+.table th:first-child {
+  width: 40%;
 }
 
 .tableRow {
@@ -128,21 +130,48 @@
 }
 
 .table td {
-  padding: 1rem 1.5rem;
+  padding: 0.875rem 1.5rem;
+  vertical-align: middle;
 }
 
 .clientCell {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.875rem;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--surface-secondary);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.clientInfo {
+  display: flex;
+  flex-direction: column;
 }
 
 .clientName {
   display: block;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 0.25rem;
+  line-height: 1.4;
+}
+
+.clientSub {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
 }
 
 .contactCell {

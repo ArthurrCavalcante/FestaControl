@@ -31,11 +31,45 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
-  background: var(--surface);
-  padding: 0.5rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
+}
+
+.filterLinks {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-tertiary);
+}
+
+.filterLink {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: var(--transition);
+  padding: 0.25rem 0.5rem;
+}
+
+.filterLink:hover {
+  color: var(--text-primary);
+}
+
+.filterLinkActive {
+  color: var(--primary);
+  font-weight: 600;
+  position: relative;
+}
+
+.filterLinkActive::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0.5rem;
+  right: 0.5rem;
+  height: 2px;
+  background-color: var(--primary);
+  border-radius: 2px;
 }
 
 .searchLabel {
@@ -44,7 +78,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-left: 0.5rem;
+  margin-left: 1rem;
 }
 
 .dateInput {

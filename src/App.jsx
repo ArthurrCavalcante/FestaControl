@@ -486,6 +486,7 @@ export default function App() {
           onUpdateEvent={async () => {
             await fetchDeals();
           }}
+          onNovoOrcamento={() => setShowGerador(true)}
         />;
       if (activeTab === 'configuracoes') return <Configuracoes />;
       if (activeTab === 'perfil') return <Perfil />;

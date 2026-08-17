@@ -179,33 +179,35 @@ export default function Agenda({ acervo = [] }) {
       <div className={styles.header}>
         <div className={styles.titleArea}>
           <h2>Agenda Logística</h2>
-          <p>Painel tático de operação. Clique no card simplificado para gerenciar a festa.</p>
+          <p>Acompanhe os eventos e operações agendadas.</p>
         </div>
         
         <div className={styles.searchBox}>
           {!selectedDate && (
-            <div style={{ display: 'flex', gap: '0.25rem', background: 'var(--surface-hover)', padding: '0.25rem', borderRadius: '8px' }}>
+            <div className={styles.filterLinks}>
               <button 
                 onClick={() => setFilterMode('ALL')}
-                style={{ padding: '0.5rem 1rem', border: 'none', background: filterMode === 'ALL' ? 'var(--primary)' : 'transparent', color: filterMode === 'ALL' ? 'white' : 'var(--text-secondary)', borderRadius: '6px', cursor: 'pointer', fontWeight: 500, fontSize: '0.85rem', transition: 'all 0.2s' }}
+                className={`${styles.filterLink} ${filterMode === 'ALL' ? styles.filterLinkActive : ''}`}
               >
                 Todas
               </button>
+              <span>·</span>
               <button 
                 onClick={() => setFilterMode('THIS_WEEK')}
-                style={{ padding: '0.5rem 1rem', border: 'none', background: filterMode === 'THIS_WEEK' ? 'var(--primary)' : 'transparent', color: filterMode === 'THIS_WEEK' ? 'white' : 'var(--text-secondary)', borderRadius: '6px', cursor: 'pointer', fontWeight: 500, fontSize: '0.85rem', transition: 'all 0.2s' }}
+                className={`${styles.filterLink} ${filterMode === 'THIS_WEEK' ? styles.filterLinkActive : ''}`}
               >
-                Essa Semana
+                Esta semana
               </button>
+              <span>·</span>
               <button 
                 onClick={() => setFilterMode('THIS_MONTH')}
-                style={{ padding: '0.5rem 1rem', border: 'none', background: filterMode === 'THIS_MONTH' ? 'var(--primary)' : 'transparent', color: filterMode === 'THIS_MONTH' ? 'white' : 'var(--text-secondary)', borderRadius: '6px', cursor: 'pointer', fontWeight: 500, fontSize: '0.85rem', transition: 'all 0.2s' }}
+                className={`${styles.filterLink} ${filterMode === 'THIS_MONTH' ? styles.filterLinkActive : ''}`}
               >
-                Esse Mês
+                Este mês
               </button>
             </div>
           )}
-          <span className={styles.searchLabel} style={{ marginLeft: '1rem' }}>
+          <span className={styles.searchLabel}>
             <Search size={18} /> Buscar Data:
           </span>
           <input 
@@ -225,12 +227,19 @@ export default function Agenda({ acervo = [] }) {
       {/* Nível 1: Visão Rápida */}
       <div className={styles.timeline}>
         {displayedFestas.length === 0 ? (
-          <EmptyState 
-            icon={CalendarIcon}
-            title="Nenhuma festa agendada"
-            description="Não encontramos eventos logísticos para a data selecionada."
-            style={{ margin: 'auto' }}
-          />
+          <div style={{ margin: 'auto', maxWidth: '300px', width: '100%', display: 'flex', justifyContent: 'center' }}>
+            <EmptyState 
+              icon={CalendarIcon}
+              title="Nenhuma festa agendada"
+              description="Não há eventos para o período selecionado."
+              action={{
+                label: "Criar evento",
+                icon: Plus,
+                onClick: onNovoOrcamento || (() => toast('Criar evento em breve')),
+                variant: 'secondary'
+              }}
+            />
+          </div>
         ) : displayedFestas.map(dia => (
           <div key={dia.dia} className={styles.dayColumn}>
             <h3 className={styles.dayTitle}>
