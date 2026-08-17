@@ -188,7 +188,7 @@ export default function Acervo() {
                       {item.observacoes && <span className={styles.obsIcon} title={item.observacoes}><AlertCircle size={14}/></span>}
                     </td>
                     <td><span className={styles.categoryBadge}>{item.categoria}</span></td>
-                    <td>{item.localizacao ? <span className={styles.locationBadge}>📦 {item.localizacao}</span> : '-'}</td>
+                    <td>{item.localizacao ? <span className={styles.locationBadge} style={{ display: 'inline-flex', alignItems: 'center' }}><Package size={14} style={{ marginRight: 4 }} /> {item.localizacao}</span> : '-'}</td>
                     <td className={styles.aliasesCell}>
                       {item.apelidos && item.apelidos.length > 0 
                         ? item.apelidos.map(a => <span key={a} className={styles.aliasTag}>{a}</span>)

@@ -336,7 +336,7 @@ export default function Agenda({ acervo = [] }) {
                     }
                   }
                   return locationStr ? (
-                    <span className={styles.locationTag} style={{marginLeft: 8}}>📦 {locationStr}</span>
+                    <span className={styles.locationTag} style={{marginLeft: 8, display: 'inline-flex', alignItems: 'center'}}><Package size={14} style={{ marginRight: 4 }} /> {locationStr}</span>
                   ) : null;
                 })()}
               </span>

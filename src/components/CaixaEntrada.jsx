@@ -28,6 +28,8 @@ import {
   Sparkles,
   MapPin,
   Calendar,
+  PlayCircle,
+  Loader2,
   DollarSign,
   Bell,
   ArrowLeft
@@ -446,11 +448,11 @@ export default function CaixaEntrada() {
                             <div className={styles.mediaBubble}>
                               <div className={styles.mediaHeader}>
                                 <Phone size={14} /> <span>Áudio</span>
-                                {msg.ai_status === 'PROCESSING' && <span className={styles.transcribing}>⏳ Transcrevendo...</span>}
-                                {msg.ai_status === 'COMPLETED' && <span className={styles.transcribing} style={{color: '#10b981'}}>✅ Transcrito</span>}
+                                {msg.ai_status === 'PROCESSING' && <span className={styles.transcribing} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Loader2 size={14} className={styles.spinner} /> Transcrevendo...</span>}
+                                {msg.ai_status === 'COMPLETED' && <span className={styles.transcribing} style={{color: '#10b981', display: 'inline-flex', alignItems: 'center', gap: '4px'}}><CheckCircle2 size={14} /> Transcrito</span>}
                               </div>
                               {msg.media_url && (
-                                <a href={msg.media_url} target="_blank" rel="noreferrer" className={styles.mediaLink}>▶ Ouvir original</a>
+                                <a href={msg.media_url} target="_blank" rel="noreferrer" className={styles.mediaLink} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><PlayCircle size={14} /> Ouvir original</a>
                               )}
                               {msg.transcription && (
                                 <div className={styles.transcriptionBox}>

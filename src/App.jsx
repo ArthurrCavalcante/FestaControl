@@ -13,7 +13,7 @@ import IconButton from './components/ui/IconButton';
 import Configuracoes from './components/Configuracoes';
 import Perfil from './components/Perfil';
 import Dashboard from './components/Dashboard';
-import { PartyPopper, Calendar, MessageSquare, BarChart3, Settings, Bell, Search, Plus, ListTodo, Package, User, LogOut, Users, LayoutDashboard, Camera, Menu, ChevronLeft, Zap, Inbox } from 'lucide-react';
+import { PartyPopper, Calendar, MessageSquare, BarChart3, Settings, Bell, Search, Plus, ListTodo, Package, User, LogOut, Users, LayoutDashboard, Camera, Menu, ChevronLeft, Zap, Inbox, AlertTriangle, XCircle } from 'lucide-react';
 import { useCompany } from './hooks/useCompany';
 import Onboarding from './components/Onboarding';
 
@@ -362,15 +362,15 @@ export default function App() {
     const missingKey = !import.meta.env.VITE_SUPABASE_ANON_KEY;
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', padding: '2rem', fontFamily: 'system-ui', textAlign: 'center' }}>
-        <h2 style={{ color: '#dc2626' }}>⚠️ Erro de configuração</h2>
+        <h2 style={{ color: '#dc2626', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}><AlertTriangle size={24} /> Erro de configuração</h2>
         <p style={{ color: '#6b7280', maxWidth: 400 }}>
           O app não conseguiu conectar ao banco de dados. Verifique as variáveis de ambiente no painel do Vercel.
         </p>
         {(missingUrl || missingKey) && (
-          <pre style={{ background: '#fee2e2', padding: '1rem', borderRadius: 8, textAlign: 'left', fontSize: '0.8rem' }}>
-            {missingUrl && 'VITE_SUPABASE_URL: ❌ ausente\n'}
-            {missingKey && 'VITE_SUPABASE_ANON_KEY: ❌ ausente\n'}
-          </pre>
+          <div style={{ background: '#fee2e2', padding: '1rem', borderRadius: 8, textAlign: 'left', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {missingUrl && <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>VITE_SUPABASE_URL: <XCircle size={14} color="#dc2626" /> ausente</span>}
+            {missingKey && <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>VITE_SUPABASE_ANON_KEY: <XCircle size={14} color="#dc2626" /> ausente</span>}
+          </div>
         )}
         <p style={{ color: '#9ca3af', fontSize: '0.8rem' }}>session={String(session)} | companyLoading={String(companyLoading)}</p>
         <button onClick={() => window.location.reload()} style={{ padding: '0.5rem 1.5rem', borderRadius: 8, background: '#f97316', color: 'white', border: 'none', cursor: 'pointer' }}>Tentar novamente</button>
