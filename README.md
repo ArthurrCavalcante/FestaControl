@@ -38,8 +38,9 @@ O **FestaFlow** nasceu para resolver um problema real: a desorganização operac
 
 ---
 
-## 🚀 Como Rodar Localmente
+## 🛠️ Como Rodar Localmente
 
+### 1. Configuração do Frontend
 ```bash
 # Clone o repositório
 git clone https://github.com/SEU_USUARIO/festaflow.git
@@ -50,10 +51,24 @@ npm install
 
 # Configure as variáveis de ambiente
 cp .env.example .env.local
-# Preencha o .env.local com suas credenciais do Supabase e Gemini
+# Preencha o .env.local com suas credenciais públicas do Supabase (URL e Anon Key)
 
 # Rode em modo de desenvolvimento
 npm run dev
+```
+
+### 2. Configuração do Backend (Edge Functions)
+As Edge Functions rodam no ambiente do Supabase e precisam de variáveis (secrets) configuradas via CLI do Supabase ou painel:
+- `GEMINI_API_KEY`: Chave da API do Google Gemini para a IA.
+- `INTERNAL_FUNCTION_SECRET`: Chave aleatória (ex: UUID) usada para comunicação segura entre funções internas (ex: de webhook para event-processor).
+- `FB_APP_SECRET`: Secret do App Meta (Facebook) para validar a assinatura do Webhook.
+- `FB_VERIFY_TOKEN`: Token configurado por você no painel da Meta para verificação inicial.
+- `INSTAGRAM_ACCESS_TOKEN`: Token permanente para enviar respostas e ler dados da Graph API.
+
+Para configurar localmente e fazer deploy das funções:
+```bash
+supabase secrets set INTERNAL_FUNCTION_SECRET=sua_chave_secreta
+supabase functions deploy
 ```
 
 ---
