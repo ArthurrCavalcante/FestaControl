@@ -27,6 +27,7 @@ const FichaCliente = lazy(() => import('./components/FichaCliente'));
 const BaseClientes = lazy(() => import('./components/BaseClientes'));
 const Agenda = lazy(() => import('./components/Agenda'));
 const OperacaoEventos = lazy(() => import('./components/OperacaoEventos'));
+const MobileHub = lazy(() => import('./components/MobileHub'));
 
 
 export default function App() {
@@ -49,6 +50,7 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   const requestEventData = (defaultData, defaultHora) => {
     return new Promise((resolve) => {
@@ -178,7 +180,16 @@ export default function App() {
       fetchInboxTasks();
     };
     window.addEventListener('app_refresh', handleAppRefresh);
-    return () => window.removeEventListener('app_refresh', handleAppRefresh);
+    
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('app_refresh', handleAppRefresh);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -473,7 +484,25 @@ export default function App() {
     }
 
     const renderTab = () => {
-      if (activeTab === 'dashboard') return <Dashboard leads={leads} inboxTasksCount={inboxTasksCount} onNovoOrcamento={() => setShowGerador(true)} session={session} />;
+      if (activeTab === 'dashboard') {
+        if (isMobile) {
+          return <MobileHub 
+            session={session} 
+            leads={leads} 
+            onNavigate={(tab) => {
+              setActiveTab(tab);
+              setMobileMenuOpen(false);
+            }} 
+            onNovoOrcamento={() => setShowGerador(true)}
+          />;
+        }
+        return <Dashboard 
+          leads={leads} 
+          inboxTasksCount={inboxTasksCount} 
+          onNovoOrcamento={() => setShowGerador(true)} 
+          session={session}
+        />;
+      }
       if (activeTab === 'pipeline') return <KanbanBoard leads={leads} onLeadSelect={setSelectedLead} onMoveLead={handleMoveLead} acervo={acervo} />;
       if (activeTab === 'acervo') return <Acervo />;
       if (activeTab === 'leads') return <BaseClientes leads={clientes} onCadastrarManual={() => setShowGerador(true)} onGerarOrcamentoPara={(lead) => setPrefilledLeadForGerador(lead)} onRefresh={fetchClientes} onOpenImportModal={() => {
