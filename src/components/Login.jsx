@@ -51,7 +51,7 @@ export default function Login() {
       <Card padding="lg" className={styles.cardOverrides}>
         <div className={styles.logoContainer}>
           <div className={styles.logoIcon}>
-            <img src="/logo-icon.png" alt="FestaFlow" style={{ width: 48, height: 48, objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(249,115,22,0.2))' }} />
+            <img src="/logo-icon.png" alt="FestaFlow" style={{ width: 64, height: 64, objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(249,115,22,0.2))' }} />
           </div>
           <h2 className={styles.title}>FestaFlow CRM</h2>
           <p className={styles.subtitle}>
