@@ -378,7 +378,7 @@ export default function App() {
     );
   }
 
-  if (isLoading) {
+  if (isLoading && !hasLoadedOnce) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Spinner size={32} label="Carregando..." />
