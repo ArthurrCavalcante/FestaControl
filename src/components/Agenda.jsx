@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import styles from './Agenda.module.css';
+import { toast } from 'react-hot-toast';
 
 // UI Components
 import Card from './ui/Card';
@@ -21,7 +22,8 @@ import {
   MapPin, 
   CircleDollarSign,
   Lock,
-  Flag
+  Flag,
+  Plus
 } from 'lucide-react';
 
 const STATUS_MAP = {
@@ -33,7 +35,7 @@ const STATUS_MAP = {
   'PROBLEMA': { label: 'Problema', variant: 'danger' }
 };
 
-export default function Agenda({ acervo = [] }) {
+export default function Agenda({ acervo = [], onNovoOrcamento }) {
   const [selectedDate, setSelectedDate] = useState('');
   const [filterMode, setFilterMode] = useState('THIS_MONTH'); // ALL, THIS_WEEK, THIS_MONTH
   const [selectedFesta, setSelectedFesta] = useState(null);
