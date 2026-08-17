@@ -12,8 +12,8 @@ export default function ConfirmEventModal({ onConfirm, onCancel, initialData, in
   };
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-      <div style={{ background: 'var(--surface)', padding: '2rem', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '400px', boxShadow: 'var(--shadow-lg)' }}>
+    <div className="globalModalOverlay" onClick={onCancel}>
+      <div className="globalModalContent" onClick={e => e.stopPropagation()}>
         <h3 style={{ margin: '0 0 1.5rem 0', color: 'var(--text-primary)', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           Confirmação de Festa
           <img src="/logo-icon.png" alt="Festa" style={{ width: 20, height: 20, objectFit: 'contain' }} />

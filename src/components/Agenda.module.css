@@ -38,6 +38,13 @@
   align-items: center;
   gap: 0.5rem;
   color: var(--text-tertiary);
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px; /* Space for scrollbar */
+}
+.filterLinks::-webkit-scrollbar {
+  display: none;
 }
 
 .filterLink {
@@ -284,19 +291,27 @@
 }
 
 @media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+  }
+  .searchBox {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .searchLabel {
+    margin-left: 0;
+    justify-content: space-between;
+  }
   .timeline {
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    scroll-padding: 0 1rem;
-    padding-bottom: 1rem;
-    gap: 1rem;
-    -webkit-overflow-scrolling: touch;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 2rem;
   }
   .dayColumn {
-    scroll-snap-align: center;
-    min-width: 85vw;
-    width: 85vw;
-    flex: 0 0 auto;
+    min-width: 100%;
+    width: 100%;
+    margin-bottom: 1.5rem;
   }
 }

@@ -224,7 +224,7 @@
   background: var(--surface);
   border-top: 1px solid var(--border);
   padding: 0.5rem 1rem;
-  padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
   box-shadow: 0 -4px 12px rgba(0,0,0,0.03);
   z-index: 20;
 }
@@ -310,6 +310,7 @@
   }
   .pageContent {
     padding: 1rem;
+    padding-bottom: max(1rem, calc(80px + env(safe-area-inset-bottom))); /* Ensure space for bottom nav */
   }
   .bottomNav {
     display: flex;

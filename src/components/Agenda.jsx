@@ -58,6 +58,15 @@ export default function Agenda({ acervo = [], onNovoOrcamento }) {
           if (!d) d = new Date().toISOString().split('T')[0];
           if (typeof d === 'string' && d.includes('T')) d = d.split('T')[0];
           
+          // Fix for slash separated dates if they sneaked into the DB
+          if (typeof d === 'string' && d.includes('/')) {
+            const parts = d.split('/');
+            if (parts.length === 3) {
+              // Assuming DD/MM/YYYY
+              d = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+          }
+          
           if (!grouped[d]) {
             grouped[d] = {
               dia: d,
@@ -254,7 +263,7 @@ export default function Agenda({ acervo = [], onNovoOrcamento }) {
             
             <div className={styles.dayCards}>
               {dia.festas.map(festa => {
-                const status = STATUS_MAP[festa.statusOp];
+                const status = STATUS_MAP[festa.statusOp] || { label: festa.statusOp || 'Pendente', variant: 'default' };
                 let locationStr = null;
                 if (Array.isArray(acervo)) {
                   if (festa.tema_id) {

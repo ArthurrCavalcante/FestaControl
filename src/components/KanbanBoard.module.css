@@ -179,3 +179,18 @@
     display: none;
   }
 }
+
+@media (max-width: 768px) {
+  .container {
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 1rem;
+    padding-right: 1rem;
+    -webkit-overflow-scrolling: touch;
+  }
+  .column {
+    min-width: 85vw;
+    width: 85vw;
+    scroll-snap-align: center;
+    flex: 0 0 auto;
+  }
+}

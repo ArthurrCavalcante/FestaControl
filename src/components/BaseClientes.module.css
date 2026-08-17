@@ -275,4 +275,89 @@
   .searchBox {
     width: 100%;
   }
+
+  .actionMenu {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    border-radius: 24px 24px 0 0 !important;
+    padding: 1.5rem 1rem env(safe-area-inset-bottom, 1rem) 1rem !important;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.15) !important;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    z-index: 200 !important;
+  }
+  
+  .actionMenuItem {
+    padding: 1rem !important;
+    font-size: 1.05rem !important;
+  }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.actionMenu {
+  position: absolute;
+  right: 40px;
+  top: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  min-width: 200px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: left;
+}
+
+.actionMenuItem {
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.actionMenuItem:hover {
+  background: var(--surface-hover);
+}
+
+.actionMenuOverlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .actionMenuOverlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 190;
+    animation: fadeIn 0.3s ease;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
