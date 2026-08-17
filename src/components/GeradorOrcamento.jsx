@@ -19,7 +19,7 @@ import {
   Save,
   Loader2
 } from 'lucide-react';
-import BalloonIcon from './icons/BalloonIcon';
+
 
 export default function GeradorOrcamento({ onClose, onAddLead, prefilledLead = null }) {
   const { settings } = useCompany();
@@ -280,7 +280,7 @@ export default function GeradorOrcamento({ onClose, onAddLead, prefilledLead = n
           ) : (
             <div className={styles.successState}>
               <div className={styles.successIconWrapper}>
-                <BalloonIcon size={40} />
+                <img src="/logo-icon.png" alt="FestaFlow" style={{ width: 40, height: 40, objectFit: 'contain' }} />
               </div>
               <h2 className={styles.successTitle}>Orçamento Gerado!</h2>
               <p className={styles.successText}>

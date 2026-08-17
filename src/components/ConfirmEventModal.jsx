@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import BalloonIcon from './icons/BalloonIcon';
+
 
 export default function ConfirmEventModal({ onConfirm, onCancel, initialData, initialHora }) {
   const [dataFesta, setDataFesta] = useState(initialData || '');
@@ -16,7 +16,7 @@ export default function ConfirmEventModal({ onConfirm, onCancel, initialData, in
       <div style={{ background: 'var(--surface)', padding: '2rem', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '400px', boxShadow: 'var(--shadow-lg)' }}>
         <h3 style={{ margin: '0 0 1.5rem 0', color: 'var(--text-primary)', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           Confirmação de Festa
-          <BalloonIcon size={20} strokeWidth={1.5} color="var(--primary)" />
+          <img src="/logo-icon.png" alt="Festa" style={{ width: 20, height: 20, objectFit: 'contain' }} />
         </h3>
         
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

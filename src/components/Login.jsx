@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import styles from './Login.module.css';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
-import BalloonIcon from './icons/BalloonIcon';
+
 import Card from './ui/Card';
 import Button from './ui/Button';
 import { toast } from 'react-hot-toast';
@@ -51,7 +51,7 @@ export default function Login() {
       <Card padding="lg" className={styles.cardOverrides}>
         <div className={styles.logoContainer}>
           <div className={styles.logoIcon}>
-            <BalloonIcon size={32} strokeWidth={2.5} />
+            <img src="/logo-icon.png" alt="FestaFlow" style={{ width: 48, height: 48, objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(249,115,22,0.2))' }} />
           </div>
           <h2 className={styles.title}>FestaFlow CRM</h2>
           <p className={styles.subtitle}>

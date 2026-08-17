@@ -14,7 +14,7 @@ import Configuracoes from './components/Configuracoes';
 import Perfil from './components/Perfil';
 import Dashboard from './components/Dashboard';
 import { Calendar, MessageSquare, BarChart3, Settings, Bell, Search, Plus, ListTodo, ClipboardList, Package, User, LogOut, Users, LayoutDashboard, Camera, Menu, ChevronLeft, Zap, Inbox, AlertTriangle, XCircle } from 'lucide-react';
-import BalloonIcon from './components/icons/BalloonIcon';
+
 import { useCompany } from './hooks/useCompany';
 import Onboarding from './components/Onboarding';
 
@@ -589,7 +589,7 @@ export default function App() {
           {settings?.logo_url ? (
             <img src={settings.logo_url} alt="Logo" className={styles.brandLogo} style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover' }} />
           ) : (
-            <BalloonIcon size={28} />
+            <img src="/logo-icon.png" alt="FestaFlow Logo" style={{ width: 28, height: 28, objectFit: 'contain' }} />
           )}
           <h2 className={styles.brandText}>{settings?.companies?.nome || 'FestaFlow'}</h2>
         </div>
