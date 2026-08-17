@@ -93,14 +93,11 @@ export default function Dashboard({ leads = [], inboxTasksCount = 0, onNovoOrcam
 
   return (
     <div className={styles.dashboardContainer}>
-      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, display: 'block', marginBottom: '1.5rem' }}>
-        Visão Geral
-      </span>
-
       <div className={styles.headerRow}>
         <div className={styles.greetingSection}>
-          <h2>Bom dia, {userName}.</h2>
-          <p>Aqui está o resumo do FestaFlow hoje.</p>
+          <span className={styles.eyebrow}>OPERAÇÃO DE HOJE</span>
+          <h2>Olá, {userName}.</h2>
+          <p>Festas, vendas e pendências que precisam da sua atenção.</p>
         </div>
         <Button variant="primary" icon={Plus} onClick={onNovoOrcamento}>
           Novo orçamento
@@ -112,21 +109,21 @@ export default function Dashboard({ leads = [], inboxTasksCount = 0, onNovoOrcam
           <span className={styles.metricValue}>{metrics.eventosProximosCount}</span>
           <span className={styles.metricLabel}>Eventos próximos</span>
           <span className={styles.metricSubLabel}>
-            {metrics.eventosProximosCount === 0 ? 'Nenhum evento futuro' : 'Tudo sob controle'}
+            {metrics.eventosProximosCount === 0 ? 'Nenhuma festa confirmada' : 'Próximas montagens em foco'}
           </span>
         </div>
         <div className={styles.metricCard}>
           <span className={styles.metricValue}>{metrics.orcamentosAbertosCount}</span>
           <span className={styles.metricLabel}>Orçamentos em andamento</span>
           <span className={styles.metricSubLabel}>
-            {metrics.aguardandoRespostaCount > 0 ? `${metrics.aguardandoRespostaCount} avançados` : 'Novos orçamentos'}
+            {metrics.aguardandoRespostaCount > 0 ? `${metrics.aguardandoRespostaCount} pedem retorno` : 'Acompanhe as negociações'}
           </span>
         </div>
         <div className={styles.metricCard}>
           <span className={styles.metricValue}>{inboxTasksCount}</span>
           <span className={styles.metricLabel}>Pendências hoje</span>
           <span className={styles.metricSubLabel}>
-            {inboxTasksCount === 0 ? 'Caixa de entrada zerada' : 'Aguardando sua ação'}
+            {inboxTasksCount === 0 ? 'Sem urgências agora' : 'Não deixe cliente esperando'}
           </span>
         </div>
       </div>

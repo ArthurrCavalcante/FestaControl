@@ -34,3 +34,5 @@ graphify-out/
 
 
 .vercel
+
+.env

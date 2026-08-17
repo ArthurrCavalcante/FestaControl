@@ -13,7 +13,7 @@ import IconButton from './components/ui/IconButton';
 import Configuracoes from './components/Configuracoes';
 import Perfil from './components/Perfil';
 import Dashboard from './components/Dashboard';
-import { Calendar, MessageSquare, BarChart3, Settings, Bell, Search, Plus, ListTodo, Package, User, LogOut, Users, LayoutDashboard, Camera, Menu, ChevronLeft, Zap, Inbox, AlertTriangle, XCircle } from 'lucide-react';
+import { Calendar, MessageSquare, BarChart3, Settings, Bell, Search, Plus, ListTodo, ClipboardList, Package, User, LogOut, Users, LayoutDashboard, Camera, Menu, ChevronLeft, Zap, Inbox, AlertTriangle, XCircle } from 'lucide-react';
 import BalloonIcon from './components/icons/BalloonIcon';
 import { useCompany } from './hooks/useCompany';
 import Onboarding from './components/Onboarding';
@@ -26,6 +26,7 @@ const GeradorOrcamento = lazy(() => import('./components/GeradorOrcamento'));
 const FichaCliente = lazy(() => import('./components/FichaCliente'));
 const BaseClientes = lazy(() => import('./components/BaseClientes'));
 const Agenda = lazy(() => import('./components/Agenda'));
+const OperacaoEventos = lazy(() => import('./components/OperacaoEventos'));
 
 
 export default function App() {
@@ -488,6 +489,7 @@ export default function App() {
           }}
           onNovoOrcamento={() => setShowGerador(true)}
         />;
+      if (activeTab === 'operacao') return <OperacaoEventos />;
       if (activeTab === 'configuracoes') return <Configuracoes />;
       if (activeTab === 'perfil') return <Perfil />;
       return null;
@@ -604,7 +606,7 @@ export default function App() {
         </div>
 
         <nav className={styles.nav}>
-            <button 
+            <button
               className={`${styles.navItem} ${activeTab === 'dashboard' ? styles.active : ''}`}
               onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }}
               title="Visão Geral"
@@ -631,6 +633,13 @@ export default function App() {
               title="Agenda"
             >
               <Calendar size={20} /> <span className={styles.navLabel}>Agenda</span>
+            </button>
+            <button
+              className={`${styles.navItem} ${activeTab === 'operacao' ? styles.active : ''}`}
+              onClick={() => { setActiveTab('operacao'); setMobileMenuOpen(false); }}
+              title="Operação"
+            >
+              <ClipboardList size={20} /> <span className={styles.navLabel}>Operação</span>
             </button>
             <button 
               className={`${styles.navItem} ${activeTab === 'inbox' ? styles.active : ''}`}
@@ -698,6 +707,7 @@ export default function App() {
                activeTab === 'pipeline' ? 'Pipeline' : 
                activeTab === 'leads' ? 'Clientes' :
                activeTab === 'agenda' ? 'Agenda' :
+               activeTab === 'operacao' ? 'Operação' :
                activeTab === 'inbox' ? 'Avisos' :
                activeTab === 'acervo' ? 'Acervo' :
                activeTab === 'catalogo' ? 'Galeria' :

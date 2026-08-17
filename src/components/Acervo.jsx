@@ -21,6 +21,7 @@ export default function Acervo() {
     localizacao: '',
     apelidos: '',
     observacoes: '',
+    quantidade_total: 1,
     ativo: true
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -54,6 +55,7 @@ export default function Acervo() {
         localizacao: item.localizacao || '',
         apelidos: item.apelidos ? item.apelidos.join(', ') : '',
         observacoes: item.observacoes || '',
+        quantidade_total: item.quantidade_total || 1,
         ativo: item.ativo
       });
     } else {
@@ -65,6 +67,7 @@ export default function Acervo() {
         localizacao: '',
         apelidos: '',
         observacoes: '',
+        quantidade_total: 1,
         ativo: true
       });
     }
@@ -87,6 +90,7 @@ export default function Acervo() {
       localizacao: formData.localizacao,
       apelidos: apelidosArray,
       observacoes: formData.observacoes,
+      quantidade_total: Number(formData.quantidade_total),
       ativo: formData.ativo
     };
 
@@ -164,6 +168,7 @@ export default function Acervo() {
                 <th>Status</th>
                 <th>Nome</th>
                 <th>Categoria</th>
+                <th>Qtd.</th>
                 <th>Localização</th>
                 <th>Apelidos (Tags)</th>
                 <th className={styles.actionsColumn}>Ações</th>
@@ -172,7 +177,7 @@ export default function Acervo() {
             <tbody>
               {filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className={styles.emptyState}>Nenhum item encontrado.</td>
+                  <td colSpan="7" className={styles.emptyState}>Nenhum item encontrado.</td>
                 </tr>
               ) : (
                 filteredItems.map(item => (
@@ -188,6 +193,7 @@ export default function Acervo() {
                       {item.observacoes && <span className={styles.obsIcon} title={item.observacoes}><AlertCircle size={14}/></span>}
                     </td>
                     <td><span className={styles.categoryBadge}>{item.categoria}</span></td>
+                    <td>{item.quantidade_total || 1}</td>
                     <td>{item.localizacao ? <span className={styles.locationBadge} style={{ display: 'inline-flex', alignItems: 'center' }}><Package size={14} style={{ marginRight: 4 }} /> {item.localizacao}</span> : '-'}</td>
                     <td className={styles.aliasesCell}>
                       {item.apelidos && item.apelidos.length > 0 
@@ -244,6 +250,16 @@ export default function Acervo() {
                   <option value="Peça">Peça</option>
                   <option value="Kit">Kit Completo</option>
                 </select>
+              </div>
+              <div className={styles.formGroup} style={{ flex: 1 }}>
+                <label>Quantidade disponível *</label>
+                <input
+                  type="number"
+                  min="1"
+                  required
+                  value={formData.quantidade_total}
+                  onChange={(e) => setFormData({...formData, quantidade_total: e.target.value})}
+                />
               </div>
             </div>
 

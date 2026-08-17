@@ -1,16 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
 :root {
   /* Fundo e Superfície */
-  --bg-color: #f7f7f8;
-  --surface: #ffffff;
-  --surface-hover: #f4f4f5;
-  --surface-secondary: #f4f4f5;
+  --bg-color: #f7f5f1;
+  --surface: #fffdfa;
+  --surface-hover: #f3f0eb;
+  --surface-secondary: #f4f0ea;
 
   /* Primária (Azul Petróleo / Escuro) */
-  --primary: #0e7490;
-  --primary-hover: #0891b2;
-  --primary-light: #cffafe;
+  --primary: #176b72;
+  --primary-hover: #115960;
+  --primary-light: #d9eff0;
+  --accent: #e86f52;
+  --accent-hover: #cf5d43;
+  --sidebar-ink: #1e2a30;
 
   /* Semânticas */
   --danger: #ef4444;
@@ -21,24 +24,24 @@
   --warning-light: #fef3c7;
 
   /* Textos */
-  --text-primary: #18181b;
-  --text-secondary: #71717a;
-  --text-tertiary: #a1a1aa;
+  --text-primary: #20272b;
+  --text-secondary: #697278;
+  --text-tertiary: #98a0a4;
 
   /* Bordas e Sombras */
-  --border: #e4e4e7;
-  --border-focus: #7dd3fc;
+  --border: #e8e2da;
+  --border-focus: #83c4c8;
   
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.03);
-  --shadow-md: 0 2px 4px 0 rgb(0 0 0 / 0.04);
-  --shadow-lg: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.03);
-  --shadow-hover: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.03);
+  --shadow-sm: 0 1px 2px rgb(34 36 37 / 0.03);
+  --shadow-md: 0 8px 20px rgb(34 36 37 / 0.05);
+  --shadow-lg: 0 16px 34px rgb(34 36 37 / 0.08);
+  --shadow-hover: 0 12px 24px rgb(34 36 37 / 0.08);
 
   /* Arredondamentos (Menos AI, mais estruturado) */
   --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 10px;
+  --radius-md: 7px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
   
   /* Animações (Snappy e diretas) */
   --transition: all 0.15s ease-out;
@@ -56,8 +59,9 @@
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
   background-color: var(--bg-color);
+  background-image: radial-gradient(circle at 100% 0%, rgb(232 111 82 / 0.06), transparent 32rem);
   color: var(--text-primary);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;

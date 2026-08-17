@@ -9,8 +9,8 @@
 /* Sidebar */
 .sidebar {
   width: 260px;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
+  background: var(--sidebar-ink);
+  border-right: none;
   display: flex;
   flex-direction: column;
   padding: 1.5rem 0;
@@ -22,7 +22,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: var(--primary);
+  color: white;
 }
 
 .brand h2 {
@@ -30,11 +30,20 @@
   font-size: 1.5rem;
   margin: 0;
   letter-spacing: -0.025em;
-  color: var(--text-primary);
+  color: white;
 }
 
 .newActionContainer {
   padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+.newActionContainer button {
+  background: var(--accent);
+  box-shadow: none;
+}
+
+.newActionContainer button:hover:not(:disabled) {
+  background: var(--accent-hover);
 }
 
 .nav {
@@ -49,7 +58,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.875rem 1.5rem;
-  color: var(--text-secondary);
+  color: rgb(255 255 255 / 0.68);
   font-weight: 500;
   border: none;
   background: transparent;
@@ -61,13 +70,13 @@
 }
 
 .navItem:hover {
-  background: var(--surface-hover);
-  color: var(--text-primary);
+  background: rgb(255 255 255 / 0.07);
+  color: white;
 }
 
 .navItem.active {
-  background: var(--primary-light);
-  color: var(--primary-hover);
+  background: rgb(255 255 255 / 0.12);
+  color: white;
   font-weight: 600;
 }
 
@@ -78,7 +87,7 @@
   top: 0;
   bottom: 0;
   width: 4px;
-  background: var(--primary);
+  background: var(--accent);
   border-top-right-radius: 4px;
   border-bottom-right-radius: 4px;
 }
@@ -90,21 +99,20 @@
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  background: var(--bg-color);
 }
 
 /* Header */
 .header {
   height: 72px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   padding: 0 2rem;
   justify-content: space-between;
   z-index: 10;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  box-shadow: none;
 }
 
 .headerTitle {
@@ -143,14 +151,14 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-light), var(--primary));
+  background: var(--primary);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  box-shadow: var(--shadow-sm);
-  border: 2px solid white;
+  box-shadow: none;
+  border: 3px solid var(--surface-secondary);
 }
 
 .profileDropdown {
