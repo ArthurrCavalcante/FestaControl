@@ -4,10 +4,30 @@ import { logError } from '../services/dbService';
 
 export const CompanyContext = createContext({});
 
+const CACHE_KEY = 'festaflow_company_settings';
+
 export function CompanyProvider({ children }) {
-  const [settings, setSettings] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Inicializa o estado a partir do cache (se existir) para evitar Skeletons em reloads
+  const getCachedSettings = () => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const initialSettings = getCachedSettings();
+  const [settings, setSettings] = useState(initialSettings);
+  const [loading, setLoading] = useState(!initialSettings);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+
+  // Aplica a cor primária imediatamente se estiver no cache
+  useEffect(() => {
+    if (initialSettings?.primary_color) {
+      document.documentElement.style.setProperty('--primary', initialSettings.primary_color);
+    }
+  }, []);
 
   const fetchSettings = async () => {
     try {
@@ -64,6 +84,7 @@ export function CompanyProvider({ children }) {
           if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
           return data;
         });
+        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
         setNeedsOnboarding(false);
         
         // Injeta a cor primária no sistema
@@ -104,6 +125,7 @@ export function CompanyProvider({ children }) {
         }
       } else {
         setSettings(null);
+        localStorage.removeItem(CACHE_KEY);
         setNeedsOnboarding(false);
         setLoading(false);
       }
@@ -127,6 +149,7 @@ export function CompanyProvider({ children }) {
       
       if (data) {
         setSettings(data);
+        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
         if (data.primary_color) {
           document.documentElement.style.setProperty('--primary', data.primary_color);
         }
