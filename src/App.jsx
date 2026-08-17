@@ -587,9 +587,9 @@ export default function App() {
       <aside className={`${styles.sidebar} ${mobileMenuOpen ? styles.mobileOpen : ''}`}>
         <div className={styles.brand}>
           {settings?.logo_url ? (
-            <img src={settings.logo_url} alt="Logo" className={styles.brandLogo} style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }} />
+            <img src={settings.logo_url} alt="Logo" className={styles.brandLogo} style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover' }} />
           ) : (
-            <img src="/logo-icon.png" alt="FestaFlow Logo" style={{ width: 36, height: 36, objectFit: 'contain' }} />
+            <img src="/logo-icon.png" alt="FestaFlow Logo" style={{ width: 44, height: 44, objectFit: 'contain' }} />
           )}
           <h2 className={styles.brandText}>{settings?.companies?.nome || 'FestaFlow'}</h2>
         </div>
