@@ -1,16 +1,112 @@
-.moduleCard {
-  cursor: pointer;
-  transition: all 0.15s ease-out;
-  border: 1px solid var(--border);
+.dashboardContainer {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.greetingSection h2 {
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.greetingSection p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.metricCard {
   background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.moduleCard:hover {
-  border-color: var(--primary);
-  background-color: var(--surface-hover);
-  box-shadow: var(--shadow-sm);
+.metricValue {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
 }
 
-.moduleCard:active {
+.metricLabel {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.tableContainer {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.eventsTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.eventsTable th {
+  padding: 1rem 1.25rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
   background-color: var(--surface-secondary);
+}
+
+.eventsTable td {
+  padding: 1rem 1.25rem;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.eventsTable tr:last-child td {
+  border-bottom: none;
+}
+
+.eventsTable tr:hover {
+  background-color: var(--surface-hover);
+}
+
+.emptyState {
+  padding: 3rem 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
 }

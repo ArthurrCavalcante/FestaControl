@@ -1,156 +1,117 @@
-import React from 'react';
-import Card from './ui/Card';
-import { 
-  BarChart3, 
-  Calendar, 
-  Users, 
-  Package, 
-  Bell, 
-  Camera, 
-  Settings, 
-  User
-} from 'lucide-react';
-import BalloonIcon from './icons/BalloonIcon';
-import Skeleton from './ui/Skeleton';
-import { useCompany } from '../hooks/useCompany';
+import React, { useMemo } from 'react';
 import styles from './Dashboard.module.css';
+import Button from './ui/Button';
+import { Plus } from 'lucide-react';
+import Badge from './ui/Badge';
 
-export default function Dashboard({ onNavigate }) {
-  const { settings, loading } = useCompany();
+export default function Dashboard({ leads = [], inboxTasksCount = 0, onNovoOrcamento, session }) {
+  const userName = session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name || session?.user?.email?.split('@')[0] || 'Victor';
 
-  const modules = [
-    {
-      id: 'pipeline',
-      title: 'Orçamentos (CRM)',
-      description: 'Acompanhe negociações e feche contratos',
-      icon: <BarChart3 size={24} strokeWidth={1.5} color="var(--primary)" />,
-      color: 'var(--surface-secondary)'
-    },
-    {
-      id: 'agenda',
-      title: 'Agenda de Eventos',
-      description: 'Calendário de festas confirmadas',
-      icon: <Calendar size={24} strokeWidth={1.5} color="var(--primary)" />,
-      color: 'var(--surface-secondary)'
-    },
-    {
-      id: 'inbox',
-      title: 'Avisos & Mensagens',
-      description: 'Notificações importantes e lembretes',
-      icon: <Bell size={24} strokeWidth={1.5} color="var(--primary)" />,
-      color: 'var(--surface-secondary)'
-    },
-    {
-      id: 'leads',
-      title: 'Base de Clientes',
-      description: 'Gerencie todos os seus contatos',
-      icon: <Users size={24} strokeWidth={1.5} color="var(--primary)" />,
-      color: 'var(--surface-secondary)'
-    },
-    {
-      id: 'acervo',
-      title: 'Acervo de Temas',
-      description: 'Inventário de temas e decorações',
-      icon: <Package size={24} strokeWidth={1.5} color="var(--primary)" />,
-      color: 'var(--surface-secondary)'
-    },
-    {
-      id: 'catalogo',
-      title: 'Galeria Mágica',
-      description: 'Análise de fotos para orçamento',
-      icon: <Camera size={24} strokeWidth={1.5} color="var(--primary)" />,
-      color: 'var(--surface-secondary)'
-    },
-    {
-      id: 'configuracoes',
-      title: 'Configurações',
-      description: 'Ajustes da empresa e sistema',
-      icon: <Settings size={24} strokeWidth={1.5} color="var(--text-secondary)" />,
-      color: 'var(--surface-secondary)'
-    },
-    {
-      id: 'perfil',
-      title: 'Meu Perfil',
-      description: 'Gerencie sua conta de usuário',
-      icon: <User size={24} strokeWidth={1.5} color="var(--text-secondary)" />,
-      color: 'var(--surface-secondary)'
-    }
-  ];
+  const metrics = useMemo(() => {
+    const today = new Date();
+    today.setHours(0,0,0,0);
 
-  if (loading) {
-    return (
-      <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ marginBottom: '2.5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Skeleton width="64px" height="64px" borderRadius="12px" style={{ marginBottom: '1rem' }} />
-          <Skeleton width="300px" height="32px" style={{ marginBottom: '0.5rem' }} />
-          <Skeleton width="450px" height="24px" />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
-          {[1,2,3,4,5,6,7,8].map(i => (
-            <Card key={i} padding="lg">
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-                <Skeleton width="48px" height="48px" borderRadius="8px" />
-                <div style={{ flex: 1 }}>
-                  <Skeleton width="60%" height="20px" style={{ marginBottom: '0.5rem' }} />
-                  <Skeleton width="90%" height="16px" />
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
+    let eventosProximosCount = 0;
+    let orcamentosAbertosCount = 0;
+    const proximosEventosList = [];
+
+    leads.forEach(lead => {
+      if (lead.status === 'CONFIRMADO' && lead.data_festa) {
+        const partyDate = new Date(lead.data_festa + 'T00:00:00');
+        if (partyDate >= today) {
+          eventosProximosCount++;
+          proximosEventosList.push({ ...lead, parsedDate: partyDate });
+        }
+      } else if (['NOVOS', 'NEGOCIACAO', 'SINAL'].includes(lead.status)) {
+        orcamentosAbertosCount++;
+      }
+    });
+
+    proximosEventosList.sort((a, b) => a.parsedDate - b.parsedDate);
+
+    return {
+      eventosProximosCount,
+      orcamentosAbertosCount,
+      proximosEventosList: proximosEventosList.slice(0, 5) // Mostrar apenas os 5 mais próximos
+    };
+  }, [leads]);
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString + 'T00:00:00');
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = date.toLocaleString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
+    return `${day} ${month}`;
+  };
+
+  const formatCurrency = (val) => {
+    if (!val) return 'R$ 0,00';
+    return Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  };
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '2.5rem', textAlign: 'center' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', justifyItems: 'center', width: '64px', height: '64px', borderRadius: '12px', background: 'var(--surface-secondary)', border: '1px solid var(--border)', color: 'var(--primary)', marginBottom: '1rem', justifyContent: 'center' }}>
-          {settings?.logo_url ? (
-            <img src={settings.logo_url} alt="Logo" style={{ width: '100%', height: '100%', borderRadius: '12px', objectFit: 'cover' }} />
-          ) : (
-            <BalloonIcon size={32} strokeWidth={1.5} />
-          )}
+    <div className={styles.dashboardContainer}>
+      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, display: 'block', marginBottom: '1.5rem' }}>
+        Visão Geral
+      </span>
+
+      <div className={styles.headerRow}>
+        <div className={styles.greetingSection}>
+          <h2>Bom dia, {userName}.</h2>
+          <p>Aqui está o resumo do FestaFlow hoje.</p>
         </div>
-        <h2 style={{ color: 'var(--text-primary)', marginBottom: '0.5rem', fontSize: '1.75rem', fontWeight: 600 }}>
-          Bem-vindo ao {settings?.companies?.nome || 'FestaFlow'}
-        </h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', maxWidth: '600px', margin: '0 auto' }}>
-          Escolha uma das opções abaixo para gerenciar seu negócio.
-        </p>
+        <Button variant="primary" icon={Plus} onClick={onNovoOrcamento}>
+          Novo orçamento
+        </Button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
-        {modules.map(module => (
-          <Card 
-            key={module.id} 
-            padding="lg" 
-            className={styles.moduleCard}
-            onClick={() => onNavigate(module.id)}
-          >
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-              <div style={{ 
-                background: module.color, 
-                padding: '0.75rem', 
-                borderRadius: '8px',
-                border: '1px solid var(--border)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                {module.icon}
-              </div>
-              <div style={{ flex: 1 }}>
-                <h3 style={{ fontSize: '1.05rem', color: 'var(--text-primary)', fontWeight: 600, margin: '0 0 0.25rem 0' }}>
-                  {module.title}
-                </h3>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
-                  {module.description}
-                </p>
-              </div>
-            </div>
-          </Card>
-        ))}
+      <div className={styles.metricsGrid}>
+        <div className={styles.metricCard}>
+          <span className={styles.metricValue}>{metrics.eventosProximosCount}</span>
+          <span className={styles.metricLabel}>Eventos próximos</span>
+        </div>
+        <div className={styles.metricCard}>
+          <span className={styles.metricValue}>{metrics.orcamentosAbertosCount}</span>
+          <span className={styles.metricLabel}>Orçamentos em andamento</span>
+        </div>
+        <div className={styles.metricCard}>
+          <span className={styles.metricValue}>{inboxTasksCount}</span>
+          <span className={styles.metricLabel}>Pendências hoje</span>
+        </div>
+      </div>
+
+      <div className={styles.sectionTitle}>
+        Próximos eventos
+      </div>
+
+      <div className={styles.tableContainer}>
+        {metrics.proximosEventosList.length > 0 ? (
+          <table className={styles.eventsTable}>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Cliente</th>
+                <th>Tema / Tipo</th>
+                <th>Valor</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {metrics.proximosEventosList.map(evento => (
+                <tr key={evento.id}>
+                  <td style={{ fontWeight: 600 }}>{formatDate(evento.data_festa)}</td>
+                  <td>{evento.nome}</td>
+                  <td style={{ color: 'var(--text-secondary)' }}>{evento.tema || evento.interesse || '-'}</td>
+                  <td>{formatCurrency(evento.valor_total)}</td>
+                  <td><Badge variant="success">Confirmado</Badge></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className={styles.emptyState}>
+            Nenhum evento futuro confirmado no momento.
+          </div>
+        )}
       </div>
     </div>
   );

@@ -472,7 +472,7 @@ export default function App() {
     }
 
     const renderTab = () => {
-      if (activeTab === 'dashboard') return <Dashboard leads={leads} onNavigate={setActiveTab} />;
+      if (activeTab === 'dashboard') return <Dashboard leads={leads} inboxTasksCount={inboxTasksCount} onNovoOrcamento={() => setShowGerador(true)} session={session} />;
       if (activeTab === 'pipeline') return <KanbanBoard leads={leads} onLeadSelect={setSelectedLead} onMoveLead={handleMoveLead} acervo={acervo} />;
       if (activeTab === 'acervo') return <Acervo />;
       if (activeTab === 'leads') return <BaseClientes leads={clientes} onCadastrarManual={() => setShowGerador(true)} onGerarOrcamentoPara={(lead) => setPrefilledLeadForGerador(lead)} onRefresh={fetchClientes} onOpenImportModal={() => {
