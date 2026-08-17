@@ -467,7 +467,7 @@ export default function CaixaEntrada() {
                             <div className={styles.mediaBubble}>
                               <div className={styles.mediaHeader}>
                                 <Camera size={14} /> <span>Imagem</span>
-                                {msg.ai_status === 'PROCESSING' && <span className={styles.transcribing}>⏳ Analisando...</span>}
+                                {msg.ai_status === 'PROCESSING' && <span className={styles.transcribing} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Loader2 size={14} className={styles.spinner} /> Analisando...</span>}
                               </div>
                               {msg.media_url && (
                                 <img src={msg.media_url} alt="Recebida" className={styles.chatImage} />

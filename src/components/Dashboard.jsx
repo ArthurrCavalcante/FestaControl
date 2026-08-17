@@ -8,9 +8,9 @@ import {
   Bell, 
   Camera, 
   Settings, 
-  User,
-  PartyPopper
+  User
 } from 'lucide-react';
+import BalloonIcon from './icons/BalloonIcon';
 import Skeleton from './ui/Skeleton';
 import { useCompany } from '../hooks/useCompany';
 import styles from './Dashboard.module.css';
@@ -109,7 +109,7 @@ export default function Dashboard({ onNavigate }) {
           {settings?.logo_url ? (
             <img src={settings.logo_url} alt="Logo" style={{ width: '100%', height: '100%', borderRadius: '12px', objectFit: 'cover' }} />
           ) : (
-            <PartyPopper size={32} strokeWidth={1.5} />
+            <BalloonIcon size={32} strokeWidth={1.5} />
           )}
         </div>
         <h2 style={{ color: 'var(--text-primary)', marginBottom: '0.5rem', fontSize: '1.75rem', fontWeight: 600 }}>

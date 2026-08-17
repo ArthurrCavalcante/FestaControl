@@ -16,9 +16,10 @@ import {
   CheckCircle2, 
   Copy, 
   MessageCircle, 
-  PartyPopper,
-  Save
+  Save,
+  Loader2
 } from 'lucide-react';
+import BalloonIcon from './icons/BalloonIcon';
 
 export default function GeradorOrcamento({ onClose, onAddLead, prefilledLead = null }) {
   const { settings } = useCompany();
@@ -279,7 +280,7 @@ export default function GeradorOrcamento({ onClose, onAddLead, prefilledLead = n
           ) : (
             <div className={styles.successState}>
               <div className={styles.successIconWrapper}>
-                <PartyPopper size={40} />
+                <BalloonIcon size={40} />
               </div>
               <h2 className={styles.successTitle}>Orçamento Gerado!</h2>
               <p className={styles.successText}>
@@ -310,7 +311,7 @@ export default function GeradorOrcamento({ onClose, onAddLead, prefilledLead = n
             <>
               <Button variant="secondary" onClick={onClose} disabled={isSaving}>Cancelar</Button>
               <Button variant="primary" icon={Save} onClick={handleGerar} disabled={isSaving}>
-                {isSaving ? 'Gerando... ⏳' : 'Gerar Orçamento'}
+                {isSaving ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><Loader2 size={16} className={styles.spinner} /> Gerando...</span> : 'Gerar Orçamento'}
               </Button>
             </>
           ) : (
