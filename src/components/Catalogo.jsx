@@ -443,7 +443,7 @@ export default function Catalogo() {
         <div className={styles.titleArea}>
           <h2><ImageIcon size={32} color="var(--primary)" /> Galeria de Temas</h2>
           <p>
-            Suba fotos das suas festas e encontre qualquer tema em segundos.
+            Referências reais das suas montagens, organizadas para vender com segurança.
             <span className={styles.titleCount}>{fotos.length} foto{fotos.length !== 1 ? 's' : ''}</span>
           </p>
         </div>
@@ -499,9 +499,9 @@ export default function Catalogo() {
         <div className={styles.uploadPanel}>
           <div className={styles.uploadHeader}>
             <div>
-              <h3 className={styles.uploadTitle}><Wand2 size={24} /> Assistente de IA</h3>
+              <h3 className={styles.uploadTitle}><Wand2 size={24} /> Organizar referências</h3>
               <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
-                Selecione as fotos. A IA vai analisar cada uma e preencher os temas para você revisar.
+                Envie as fotos, revise os temas e deixe o acervo pronto para a próxima proposta.
               </p>
             </div>
             
@@ -515,9 +515,8 @@ export default function Catalogo() {
                   icon={analyzing ? Loader2 : Wand2} 
                   onClick={handleAnalyzeAll}
                   disabled={analyzing || uploading}
-                  style={{ background: 'linear-gradient(135deg, #a855f7, #6366f1)', border: 'none' }}
                 >
-                  {analyzing ? `Processando ${uploadProgress.current}/${uploadProgress.total}...` : 'Auto-Preencher com IA'}
+                  {analyzing ? `Organizando ${uploadProgress.current}/${uploadProgress.total}...` : 'Sugerir detalhes'}
                 </Button>
               )}
             </div>
