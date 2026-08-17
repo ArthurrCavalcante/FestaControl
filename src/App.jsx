@@ -341,8 +341,9 @@ export default function App() {
       toast.error('Erro ao mover card.');
     }
   };
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
-  // Safety timeout: se ainda estiver carregando após 10 segundos, mostra tela de diagnóstico
+  // Safety timeout: se ainda estiver carregando após 10 segundos na primeira carga, mostra tela de diagnóstico
   useEffect(() => {
     const timer = setTimeout(() => setLoadingTimedOut(true), 10000);
     return () => clearTimeout(timer);
@@ -350,7 +351,13 @@ export default function App() {
 
   const isLoading = session === undefined || companyLoading;
 
-  if (isLoading && loadingTimedOut) {
+  useEffect(() => {
+    if (!isLoading) {
+      setHasLoadedOnce(true);
+    }
+  }, [isLoading]);
+
+  if (isLoading && loadingTimedOut && !hasLoadedOnce) {
     const missingUrl = !import.meta.env.VITE_SUPABASE_URL;
     const missingKey = !import.meta.env.VITE_SUPABASE_ANON_KEY;
     return (
