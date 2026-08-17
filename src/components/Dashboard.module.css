@@ -1,5 +1,5 @@
 .dashboardContainer {
-  padding: 2rem;
+  padding: 1.5rem 2rem;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -8,7 +8,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   gap: 1rem;
 }
 
@@ -28,8 +28,8 @@
 .metricsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.25rem;
-  margin-bottom: 2.5rem;
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .metricCard {
@@ -39,7 +39,7 @@
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
 .metricValue {
@@ -47,12 +47,31 @@
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1;
+  margin-bottom: 0.25rem;
 }
 
 .metricLabel {
   font-size: 0.9rem;
   color: var(--text-secondary);
   font-weight: 500;
+}
+
+.metricSubLabel {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  margin-top: 0.25rem;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 900px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .sectionTitle {
@@ -105,8 +124,53 @@
 }
 
 .emptyState {
-  padding: 3rem 2rem;
+  padding: 1.5rem 2rem;
   text-align: center;
   color: var(--text-secondary);
   font-size: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.activityList {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0.5rem 1.25rem;
+}
+
+.activityItem {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.activityItem:last-child {
+  border-bottom: none;
+}
+
+.activityTime {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.activityTitle {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.15rem;
+  font-size: 0.95rem;
+}
+
+.activitySubtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
 }
