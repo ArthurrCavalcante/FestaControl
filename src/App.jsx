@@ -29,6 +29,18 @@ const Agenda = lazy(() => import('./components/Agenda'));
 const OperacaoEventos = lazy(() => import('./components/OperacaoEventos'));
 const MobileHub = lazy(() => import('./components/MobileHub'));
 
+const pageTitles = {
+  dashboard: 'Visão geral',
+  pipeline: 'Orçamentos',
+  leads: 'Clientes',
+  agenda: 'Agenda',
+  operacao: 'Operação',
+  inbox: 'Avisos',
+  acervo: 'Acervo',
+  catalogo: 'Galeria de temas',
+  configuracoes: 'Configurações',
+  perfil: 'Perfil',
+};
 
 export default function App() {
   const [session, setSession] = useState(undefined); // undefined = loading auth
@@ -51,6 +63,11 @@ export default function App() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  const navigateTo = (tab) => {
+    setActiveTab(tab);
+    setMobileMenuOpen(false);
+  };
 
   const requestEventData = (defaultData, defaultHora) => {
     return new Promise((resolve) => {
@@ -171,6 +188,15 @@ export default function App() {
       fetchInboxTasks();
     }
   }, [session]);
+
+  useEffect(() => {
+    if (!session) {
+      document.title = session === undefined ? 'FestaFlow' : 'Entrar · FestaFlow';
+      return;
+    }
+    const section = pageTitles[activeTab];
+    document.title = section ? `${section} · FestaFlow` : 'FestaFlow';
+  }, [activeTab, session]);
 
   useEffect(() => {
     const handleAppRefresh = () => {
@@ -489,10 +515,7 @@ export default function App() {
           return <MobileHub 
             session={session} 
             leads={leads} 
-            onNavigate={(tab) => {
-              setActiveTab(tab);
-              setMobileMenuOpen(false);
-            }} 
+            onNavigate={navigateTo}
             onNovoOrcamento={() => setShowGerador(true)}
           />;
         }
@@ -614,14 +637,20 @@ export default function App() {
         onClick={() => setMobileMenuOpen(false)}
       />
       <aside className={`${styles.sidebar} ${mobileMenuOpen ? styles.mobileOpen : ''}`}>
-        <div className={styles.brand}>
+        <button
+          type="button"
+          className={styles.brand}
+          onClick={() => navigateTo('dashboard')}
+          aria-label="Ir para a visão geral"
+          title="Ir para a visão geral"
+        >
           {settings?.logo_url ? (
             <img src={settings.logo_url} alt="Logo" className={styles.brandLogo} style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover' }} />
           ) : (
             <img src="/logo-icon.png" alt="FestaFlow Logo" style={{ width: 44, height: 44, objectFit: 'contain' }} />
           )}
           <h2 className={styles.brandText}>{settings?.companies?.nome || 'FestaFlow'}</h2>
-        </div>
+        </button>
         
         <div className={styles.newActionContainer}>
           <Button 
@@ -637,42 +666,42 @@ export default function App() {
         <nav className={styles.nav}>
             <button
               className={`${styles.navItem} ${activeTab === 'dashboard' ? styles.active : ''}`}
-              onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }}
+              onClick={() => navigateTo('dashboard')}
               title="Visão Geral"
             >
               <BarChart3 size={20} /> <span className={styles.navLabel}>Visão Geral</span>
             </button>
             <button 
               className={`${styles.navItem} ${activeTab === 'pipeline' ? styles.active : ''}`}
-              onClick={() => { setActiveTab('pipeline'); setMobileMenuOpen(false); }}
+              onClick={() => navigateTo('pipeline')}
               title="Orçamentos (CRM)"
             >
               <LayoutDashboard size={20} /> <span className={styles.navLabel}>Orçamentos (CRM)</span>
             </button>
             <button 
               className={`${styles.navItem} ${activeTab === 'leads' ? styles.active : ''}`}
-              onClick={() => setActiveTab('leads')}
+              onClick={() => navigateTo('leads')}
               title="Base de Clientes"
             >
               <Users size={20} /> <span className={styles.navLabel}>Base de Clientes</span>
             </button>
             <button 
               className={`${styles.navItem} ${activeTab === 'agenda' ? styles.active : ''}`}
-              onClick={() => setActiveTab('agenda')}
+              onClick={() => navigateTo('agenda')}
               title="Agenda"
             >
               <Calendar size={20} /> <span className={styles.navLabel}>Agenda</span>
             </button>
             <button
               className={`${styles.navItem} ${activeTab === 'operacao' ? styles.active : ''}`}
-              onClick={() => { setActiveTab('operacao'); setMobileMenuOpen(false); }}
+              onClick={() => navigateTo('operacao')}
               title="Operação"
             >
               <ClipboardList size={20} /> <span className={styles.navLabel}>Operação</span>
             </button>
             <button 
               className={`${styles.navItem} ${activeTab === 'inbox' ? styles.active : ''}`}
-              onClick={() => setActiveTab('inbox')}
+              onClick={() => navigateTo('inbox')}
               title="Inbox"
             >
               <Inbox size={20} /> <span className={styles.navLabel}>Inbox</span>
@@ -680,14 +709,14 @@ export default function App() {
             </button>
             <button 
               className={`${styles.navItem} ${activeTab === 'acervo' ? styles.active : ''}`}
-              onClick={() => setActiveTab('acervo')}
+              onClick={() => navigateTo('acervo')}
               title="Inventário (Acervo)"
             >
               <Package size={20} /> <span className={styles.navLabel}>Inventário (Acervo)</span>
             </button>
             <button 
               className={`${styles.navItem} ${activeTab === 'catalogo' ? styles.active : ''}`}
-              onClick={() => setActiveTab('catalogo')}
+              onClick={() => navigateTo('catalogo')}
               title="Galeria de Temas"
             >
               <Camera size={20} /> <span className={styles.navLabel}>Galeria de Temas</span>
@@ -702,7 +731,7 @@ export default function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
             {activeTab !== 'dashboard' ? (
               <button 
-                onClick={() => setActiveTab('dashboard')}
+                onClick={() => navigateTo('dashboard')}
                 style={{ 
                   background: 'transparent', 
                   border: 'none', 
@@ -793,11 +822,11 @@ export default function App() {
 
       {/* Mobile Bottom Navigation */}
       <nav className={styles.bottomNav}>
-        <button className={`${styles.bottomNavItem} ${activeTab === 'agenda' ? styles.active : ''}`} onClick={() => setActiveTab('agenda')}>
+        <button className={`${styles.bottomNavItem} ${activeTab === 'agenda' ? styles.active : ''}`} onClick={() => navigateTo('agenda')}>
           <Calendar size={22} strokeWidth={activeTab === 'agenda' ? 2.5 : 2} />
           Agenda
         </button>
-        <button className={`${styles.bottomNavItem} ${activeTab === 'pipeline' ? styles.active : ''}`} onClick={() => setActiveTab('pipeline')}>
+        <button className={`${styles.bottomNavItem} ${activeTab === 'pipeline' ? styles.active : ''}`} onClick={() => navigateTo('pipeline')}>
           <BarChart3 size={22} strokeWidth={activeTab === 'pipeline' ? 2.5 : 2} />
           Pipeline
         </button>
@@ -808,7 +837,7 @@ export default function App() {
           </button>
         </div>
 
-        <button className={`${styles.bottomNavItem} ${activeTab === 'inbox' ? styles.active : ''}`} onClick={() => setActiveTab('inbox')}>
+        <button className={`${styles.bottomNavItem} ${activeTab === 'inbox' ? styles.active : ''}`} onClick={() => navigateTo('inbox')}>
           <div className={styles.bottomNavIconWrapper}>
             <Bell size={22} strokeWidth={activeTab === 'inbox' ? 2.5 : 2} />
             {festasProximos7Dias > 0 ? <span className={styles.bottomNavBadge}>{festasProximos7Dias}</span> : null}

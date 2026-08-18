@@ -202,12 +202,33 @@
   line-height: 1.4;
 }
 
-.contactCell {
+.contactCell,
+.phoneLink {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   color: var(--text-secondary);
   font-weight: 500;
+}
+
+.phoneLink {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+.phoneLink:hover,
+.phoneLink:focus-visible {
+  color: var(--primary);
+  text-decoration-color: currentColor;
+  outline: none;
 }
 
 /* Mobile List (Cards) */
@@ -274,6 +295,16 @@
 
   .searchBox {
     width: 100%;
+  }
+
+  .mobileCardHeader > div:first-child {
+    min-width: 0;
+  }
+
+  .mobileClientName {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .actionMenu {

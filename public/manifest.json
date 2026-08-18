@@ -1,20 +1,20 @@
 {
   "name": "FestaFlow",
   "short_name": "FestaFlow",
-  "description": "Sistema de Gestão para Empresa de Festas",
+  "description": "Organize clientes, orçamentos, agenda, acervo e operação de festas.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#4f46e5",
+  "background_color": "#fffaf5",
+  "theme_color": "#e86f52",
   "icons": [
     {
-      "src": "/vite.svg",
-      "sizes": "192x192",
+      "src": "/favicon.svg",
+      "sizes": "any",
       "type": "image/svg+xml"
     },
     {
-      "src": "/vite.svg",
-      "sizes": "512x512",
+      "src": "/favicon.svg",
+      "sizes": "any",
       "type": "image/svg+xml"
     }
   ]

@@ -16,9 +16,7 @@ import {
   Users,
   MoreVertical,
   FileText,
-  MessageCircle,
-  Eye,
-  Trash2
+  MessageCircle
 } from 'lucide-react';
 
 export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcamentoPara, onOpenImportModal }) {
@@ -48,6 +46,7 @@ export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcament
 
   const openWhatsApp = (e, telefone, nome) => {
     e.stopPropagation();
+    if (!telefone) { toast.error('Telefone não informado'); return; }
     let num = telefone.replace(/\D/g, '');
     if (!num) { toast.error("Telefone inválido"); return; }
     if (num.length <= 11) num = '55' + num;
@@ -135,9 +134,14 @@ export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcament
                   </div>
                 </td>
                 <td>
-                  <div className={styles.contactCell}>
+                  <button
+                    type="button"
+                    className={styles.phoneLink}
+                    onClick={(event) => openWhatsApp(event, lead.telefone, lead.nome)}
+                    title={`Enviar WhatsApp para ${lead.nome}`}
+                  >
                     {lead.telefone}
-                  </div>
+                  </button>
                 </td>
                 <td style={{ color: 'var(--text-secondary)' }}>{lead.origem || '-'}</td>
                 <td>
@@ -158,12 +162,8 @@ export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcament
                     <>
                       <div className={styles.actionMenuOverlay} onClick={(e) => { e.stopPropagation(); setActiveMenuId(null); }} />
                       <div className={styles.actionMenu} ref={menuRef}>
-                        <button className={styles.actionMenuItem} onClick={() => { setActiveMenuId(null); toast('Visualizar cliente em breve'); }}><Eye size={18}/> Ver cliente</button>
-                        <button className={styles.actionMenuItem} onClick={() => { setActiveMenuId(null); toast('Editar cliente em breve'); }}><Users size={18}/> Editar cliente</button>
                         <button className={`${styles.actionMenuItem} ${styles.primaryAction || ''}`} style={{ color: 'var(--primary)' }} onClick={() => { setActiveMenuId(null); onGerarOrcamentoPara(lead); }}><FileText size={18}/> Gerar orçamento</button>
                         <button className={`${styles.actionMenuItem} ${styles.successAction || ''}`} style={{ color: 'var(--success)' }} onClick={(e) => { setActiveMenuId(null); openWhatsApp(e, lead.telefone, lead.nome); }}><MessageCircle size={18}/> Enviar WhatsApp</button>
-                        <div style={{ height: 1, background: 'var(--border)', margin: '0.25rem 0' }} />
-                        <button className={`${styles.actionMenuItem} ${styles.dangerAction || ''}`} style={{ color: 'var(--danger)' }} onClick={() => { setActiveMenuId(null); deleteLead(lead.id); }}><Trash2 size={18}/> Excluir</button>
                       </div>
                     </>
                   )}
@@ -219,20 +219,21 @@ export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcament
                   <>
                     <div className={styles.actionMenuOverlay} onClick={(e) => { e.stopPropagation(); setActiveMenuId(null); }} />
                     <div className={styles.actionMenu}>
-                      <button className={styles.actionMenuItem} onClick={() => { setActiveMenuId(null); toast('Visualizar cliente em breve'); }}><Eye size={18}/> Ver cliente</button>
-                      <button className={styles.actionMenuItem} onClick={() => { setActiveMenuId(null); toast('Editar cliente em breve'); }}><Users size={18}/> Editar cliente</button>
                       <button className={`${styles.actionMenuItem} ${styles.primaryAction || ''}`} style={{ color: 'var(--primary)' }} onClick={() => { setActiveMenuId(null); onGerarOrcamentoPara(lead); }}><FileText size={18}/> Gerar orçamento</button>
                       <button className={`${styles.actionMenuItem} ${styles.successAction || ''}`} style={{ color: 'var(--success)' }} onClick={(e) => { setActiveMenuId(null); openWhatsApp(e, lead.telefone, lead.nome); }}><MessageCircle size={18}/> Enviar WhatsApp</button>
-                      <div style={{ height: 1, background: 'var(--border)', margin: '0.25rem 0' }} />
-                      <button className={`${styles.actionMenuItem} ${styles.dangerAction || ''}`} style={{ color: 'var(--danger)' }} onClick={() => { setActiveMenuId(null); deleteLead(lead.id); }}><Trash2 size={18}/> Excluir</button>
                     </div>
                   </>
                 )}
               </div>
               <div className={styles.mobileCardBody}>
-                <div className={styles.contactCell}>
+                <button
+                  type="button"
+                  className={styles.phoneLink}
+                  onClick={(event) => openWhatsApp(event, lead.telefone, lead.nome)}
+                  title={`Enviar WhatsApp para ${lead.nome}`}
+                >
                   {lead.telefone}
-                </div>
+                </button>
               </div>
               <div className={styles.mobileCardFooter}>
                 <span style={{ color: 'var(--text-secondary)' }}>
