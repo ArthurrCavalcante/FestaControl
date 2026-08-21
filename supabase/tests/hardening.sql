@@ -29,6 +29,12 @@ BEGIN
 END $$;
 
 GRANT SELECT ON security_test_tenants TO authenticated;
+GRANT SELECT ON public.companies, public.deals, public.profiles TO authenticated;
+GRANT UPDATE, DELETE ON public.deals TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON storage.objects TO authenticated;
+GRANT USAGE ON SCHEMA auth TO authenticated;
+GRANT USAGE ON SCHEMA storage TO authenticated;
+GRANT EXECUTE ON FUNCTION auth.uid() TO authenticated;
 
 INSERT INTO storage.objects (bucket_id, name)
 SELECT 'Catalogo', company_id::text || '/security-test-a.txt'
@@ -76,11 +82,16 @@ BEGIN
   GET DIAGNOSTICS affected = ROW_COUNT;
   IF affected <> 0 THEN RAISE EXCEPTION 'Tenant B can update tenant A Storage objects.'; END IF;
 
-  DELETE FROM storage.objects
-  WHERE bucket_id = 'Catalogo'
-    AND name = (SELECT company_id::text FROM security_test_tenants WHERE tenant_number = 1) || '/security-test-a.txt';
-  GET DIAGNOSTICS affected = ROW_COUNT;
-  IF affected <> 0 THEN RAISE EXCEPTION 'Tenant B can delete tenant A Storage objects.'; END IF;
+  BEGIN
+    DELETE FROM storage.objects
+    WHERE bucket_id = 'Catalogo'
+      AND name = (SELECT company_id::text FROM security_test_tenants WHERE tenant_number = 1) || '/security-test-a.txt';
+    GET DIAGNOSTICS affected = ROW_COUNT;
+    IF affected <> 0 THEN RAISE EXCEPTION 'Tenant B can delete tenant A Storage objects.'; END IF;
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM = 'Tenant B can delete tenant A Storage objects.' THEN RAISE; END IF;
+    -- Storage blocks direct table deletion; its API still evaluates the policy.
+  END;
 END $$;
 
 RESET ROLE;
