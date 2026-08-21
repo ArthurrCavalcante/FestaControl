@@ -146,6 +146,7 @@ export default function GeradorOrcamento({ onClose, onAddLead, prefilledLead = n
   };
 
   const handleCopy = () => {
+    if (settings?.companies?.is_demo) { toast.error('Ações externas estão desativadas no ambiente demo.'); return; }
     navigator.clipboard.writeText(link);
     toast.success('Link copiado!');
   };
@@ -295,7 +296,7 @@ export default function GeradorOrcamento({ onClose, onAddLead, prefilledLead = n
               </div>
 
               <div style={{ marginTop: '1rem' }}>
-                <a href={link} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                <a href={settings?.companies?.is_demo ? undefined : link} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }} onClick={(event) => { if (settings?.companies?.is_demo) { event.preventDefault(); toast.error('Ações externas estão desativadas no ambiente demo.'); } }}>
                   <Button variant="primary" size="lg" icon={MessageCircle} style={{ background: '#25D366', border: 'none' }}>
                     Abrir no WhatsApp
                   </Button>

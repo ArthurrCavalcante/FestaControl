@@ -19,6 +19,7 @@ export default function KanbanBoard({ leads, onLeadSelect, onMoveLead, acervo = 
 
   const openWhatsApp = (e, telefone, nome, interesse) => {
     e.stopPropagation();
+    if (settings?.companies?.is_demo) { toast.error('Ações externas estão desativadas no ambiente demo.'); return; }
     let num = telefone.replace(/\D/g, '');
     if (!num) { toast.error("Telefone inválido"); return; }
     if (num.length <= 11) num = '55' + num;

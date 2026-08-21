@@ -1,7 +1,8 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.112.3";
 import { analyzeConversation } from "../_shared/analyze-conversation.ts";
 import { MediaService } from "../_shared/services/MediaService.ts";
+import { captureEdgeError } from "../_shared/observability.ts";
 
 const ALLOWED_ORIGINS = [
   'https://festaflow-crm.vercel.app',
@@ -42,13 +43,29 @@ serve(async (req) => {
 
   try {
     const payload = await req.json();
-    const record = payload.record || payload; 
+    const requestedRecord = payload.record || payload;
     
-    if (!record || !record.id || !record.company_id) {
+    if (!requestedRecord || typeof requestedRecord.id !== 'string') {
       return new Response('Invalid payload', { status: 400 });
     }
 
+    const { data: record, error: eventError } = await supabase
+      .from('events_queue')
+      .select('id, company_id, type, payload, status')
+      .eq('id', requestedRecord.id)
+      .maybeSingle();
+    if (eventError || !record) return new Response('Event not found', { status: 404 });
+
     const { id: eventId, company_id: companyId, type: eventType, payload: eventData } = record;
+    const { data: company } = await supabase.from('companies').select('is_demo').eq('id', companyId).maybeSingle();
+    if (!company) return new Response('Event not found', { status: 404 });
+    if (company.is_demo) {
+      await supabase.from('events_queue').update({ status: 'FAILED', error: 'External actions disabled for demo tenant' }).eq('id', eventId);
+      return new Response(JSON.stringify({ error: 'External actions are disabled for demo tenants' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     await supabase.from('events_queue').update({ status: 'PROCESSING' }).eq('id', eventId);
 
     // Event Bus Router
@@ -58,6 +75,25 @@ serve(async (req) => {
       const mediaUrl = eventData.media_url;
       const messageId = eventData.message_id;
       const conversationId = eventData.conversation_id;
+
+      if (typeof conversationId !== 'string') return new Response('Invalid event', { status: 400 });
+      const { data: conv } = await supabase
+        .from('conversations')
+        .select('crm_state')
+        .eq('id', conversationId)
+        .eq('company_id', companyId)
+        .maybeSingle();
+      if (!conv) return new Response('Event not found', { status: 404 });
+      if (messageId) {
+        const { data: message } = await supabase
+          .from('messages')
+          .select('id')
+          .eq('id', messageId)
+          .eq('company_id', companyId)
+          .eq('conversation_id', conversationId)
+          .maybeSingle();
+        if (!message) return new Response('Event not found', { status: 404 });
+      }
       
       const { data: runLog } = await supabase.from('automation_runs').insert({
         company_id: companyId,
@@ -76,7 +112,6 @@ serve(async (req) => {
         }
 
         // Fetch current CRM state
-        const { data: conv } = await supabase.from('conversations').select('crm_state').eq('id', conversationId).single();
         const oldState = conv?.crm_state || {};
 
         // Analyze
@@ -128,10 +163,12 @@ serve(async (req) => {
           });
         }
 
-        await supabase.from('automation_runs').update({
-          status: 'SUCCESS',
-          finished_at: new Date().toISOString()
-        }).eq('id', runLog.id);
+        if (runLog) {
+          await supabase.from('automation_runs').update({
+            status: 'SUCCESS',
+            finished_at: new Date().toISOString()
+          }).eq('id', runLog.id);
+        }
 
         await supabase.from('events_queue').update({ 
           status: 'COMPLETED',
@@ -139,24 +176,25 @@ serve(async (req) => {
         }).eq('id', eventId);
 
       } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown processing error';
         if (runLog) {
           await supabase.from('automation_runs').update({
             status: 'ERROR',
-            error_message: err.message,
+            error_message: errorMessage,
             finished_at: new Date().toISOString()
           }).eq('id', runLog.id);
         }
         if (messageId) {
            await supabase.from('messages').update({ ai_status: 'ERROR' }).eq('id', messageId);
         }
-        await supabase.from('events_queue').update({ status: 'FAILED', error: err.message }).eq('id', eventId);
+        await supabase.from('events_queue').update({ status: 'FAILED', error: errorMessage }).eq('id', eventId);
       }
     }
 
     return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json', ...corsHeaders } });
 
   } catch (error) {
-    console.error('Event processing error');
+    await captureEdgeError(error, 'event-processor', req);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500, headers: corsHeaders });
   }
 });

@@ -147,8 +147,6 @@ export const addDealNote = async (dealId, companyId, texto, tipo = 'NORMAL') => 
 
 export const uploadDealFile = async (dealId, companyId, file, tipo = 'Documento') => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
     // Upload para o bucket CRM
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -177,6 +175,15 @@ export const uploadDealFile = async (dealId, companyId, file, tipo = 'Documento'
     console.error('Erro ao fazer upload do arquivo:', error);
     return { error };
   }
+};
+
+export const createDealFileSignedUrls = async (paths) => {
+  const uniquePaths = [...new Set(paths.filter(Boolean))];
+  if (uniquePaths.length === 0) return {};
+
+  const { data, error } = await supabase.storage.from('crm').createSignedUrls(uniquePaths, 300);
+  if (error) throw error;
+  return Object.fromEntries((data || []).filter(item => item.signedUrl).map(item => [item.path, item.signedUrl]));
 };
 
 export const fetchUnifiedTimeline = async (dealId) => {

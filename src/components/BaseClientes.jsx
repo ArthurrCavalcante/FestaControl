@@ -7,6 +7,7 @@ import IconButton from './ui/IconButton';
 import Card from './ui/Card';
 import EmptyState from './ui/EmptyState';
 import { toast } from 'react-hot-toast';
+import { useCompany } from '../hooks/useCompany';
 
 // Icons
 import { 
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 
 export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcamentoPara, onOpenImportModal }) {
+  const { settings } = useCompany();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeMenuId, setActiveMenuId] = useState(null);
   const menuRef = useRef(null);
@@ -46,6 +48,7 @@ export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcament
 
   const openWhatsApp = (e, telefone, nome) => {
     e.stopPropagation();
+    if (settings?.companies?.is_demo) { toast.error('Ações externas estão desativadas no ambiente demo.'); return; }
     if (!telefone) { toast.error('Telefone não informado'); return; }
     let num = telefone.replace(/\D/g, '');
     if (!num) { toast.error("Telefone inválido"); return; }

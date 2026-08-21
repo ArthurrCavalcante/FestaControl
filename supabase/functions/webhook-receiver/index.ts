@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.112.3";
 import { ProviderFactory } from "../_shared/providers/ProviderFactory.ts";
+import { resolveConnectedCompany, verifyMetaSignature } from "../_shared/webhook-security.ts";
+import { captureEdgeError } from "../_shared/observability.ts";
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -23,50 +25,21 @@ function getCorsHeaders(req: Request) {
   };
 }
 
-// Utils para validação HMAC da Meta
-async function verifyMetaSignature(payload: string, signature: string): Promise<boolean> {
-  const secret = Deno.env.get('FB_APP_SECRET');
-  if (!secret) return false;
-  
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw', encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false, ['verify']
-  );
-  
-  const sigHex = signature.replace('sha256=', '');
-  const sigBytes = new Uint8Array(sigHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
-  
-  return await crypto.subtle.verify('HMAC', key, sigBytes, encoder.encode(payload));
-}
-
 /**
  * Resolve a empresa com base no external_id da plataforma (multi-tenant real).
  * O external_id corresponde ao "id" da entrada (entry[0].id) no payload da Meta,
  * que identifica a Page ID ou a Instagram Business Account.
- *
- * Fallback para a primeira empresa cadastrada quando a tabela company_connections
- * ainda está vazia (modo single-tenant / setup inicial).
  */
 async function resolveCompanyId(platform: string, externalId: string | null): Promise<string | null> {
-  if (externalId) {
+  return await resolveConnectedCompany(platform, externalId, async (provider, providerId) => {
     const { data: connection } = await supabase
       .from('company_connections')
       .select('company_id')
-      .eq('platform', platform)
-      .eq('external_id', externalId)
-      .single();
-
-    if (connection?.company_id) {
-      return connection.company_id;
-    }
-  }
-
-  // Fallback: single-tenant / sem conexão cadastrada ainda
-  console.warn(`webhook-receiver: Nenhuma company_connection encontrada para ${platform}/${externalId}. Usando fallback single-tenant.`);
-  const { data: company } = await supabase.from('companies').select('id').limit(1).single();
-  return company?.id ?? null;
+      .eq('platform', provider)
+      .eq('external_id', providerId)
+      .maybeSingle();
+    return connection?.company_id ?? null;
+  });
 }
 
 /**
@@ -90,7 +63,7 @@ async function dispatchEventProcessor(record: Record<string, unknown>): Promise<
       'Authorization': `Bearer ${supabaseServiceKey}`,
       'x-internal-secret': INTERNAL_SECRET,
     },
-    body: JSON.stringify({ record }),
+    body: JSON.stringify({ record: { id: record.id } }),
   }).catch(err => {
     console.error('webhook-receiver: Falha ao disparar event-processor:', err.message);
   });
@@ -134,13 +107,17 @@ serve(async (req) => {
       let payload;
       try {
         payload = JSON.parse(payloadString);
-      } catch (e) {
+      } catch {
         return new Response('Invalid JSON', { status: 400 });
+      }
+      if (!payload || typeof payload !== 'object' || !Array.isArray(payload.entry)) {
+        return new Response('Invalid payload', { status: 400 });
       }
 
       // Autenticação Meta HMAC
       const signature = req.headers.get('x-hub-signature-256');
-      if (!signature || !(await verifyMetaSignature(payloadString, signature))) {
+      const appSecret = Deno.env.get('FB_APP_SECRET') ?? '';
+      if (!signature || !(await verifyMetaSignature(payloadString, signature, appSecret))) {
         console.warn('Meta Webhook: Unauthorized. Signature mismatch.');
         return new Response('Unauthorized', { status: 401 });
       }
@@ -258,7 +235,7 @@ serve(async (req) => {
       return new Response('EVENT_RECEIVED', { status: 200, headers: corsHeaders });
     }
   } catch (e) {
-    console.error('Webhook processing error');
+    await captureEdgeError(e, 'webhook-receiver', req);
     return new Response('Internal Server Error', { status: 500 });
   }
 

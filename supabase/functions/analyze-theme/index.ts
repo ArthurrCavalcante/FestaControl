@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { errorResponse, HttpError, requireLiveTenant } from "../_shared/auth.ts";
+import { loadSupabaseRequestContext } from "../_shared/supabase-auth.ts";
+import { validateThemePayload } from "../_shared/theme-validation.ts";
+import { captureEdgeError } from "../_shared/observability.ts";
 
 const ALLOWED_ORIGINS = [
   'https://festaflow-crm.vercel.app',
@@ -24,35 +27,13 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64, imagesBase64, temasCadastrados } = await req.json()
-    
-    // Suporte para o novo formato em lote ou o formato antigo
-    const imagesToProcess = imagesBase64 ? imagesBase64 : (imageBase64 ? [imageBase64] : []);
-
-    if (imagesToProcess.length === 0) {
-      return new Response(JSON.stringify({ error: 'Nenhuma imagem fornecida.' }), { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      })
-    }
-
-    // Validação de Autenticação JWT
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), { status: 401, headers: corsHeaders })
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-    
-    if (authError || !user) {
-      console.error('Erro de Autenticação JWT:', authError)
-      return new Response(JSON.stringify({ error: 'Unauthorized', details: authError?.message }), { status: 401, headers: corsHeaders })
-    }
+    const context = await loadSupabaseRequestContext(req);
+    const body = await req.json();
+    const { imagesBase64, temasCadastrados } = body;
+    const validation = validateThemePayload(body);
+    if (!validation.ok) throw new HttpError(validation.status, validation.error);
+    const imagesToProcess = validation.images;
+    requireLiveTenant(context);
 
     // A chave do Gemini agora vive de forma segura no backend (gerenciada pelos secrets do Supabase)
     const apiKey = Deno.env.get('GEMINI_API_KEY')
@@ -178,10 +159,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error("Erro na Edge Function:", error);
-    return new Response(JSON.stringify({ error: 'Erro ao analisar imagem.', details: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    if (!(error instanceof HttpError)) await captureEdgeError(error, "analyze-theme", req);
+    return errorResponse(error, corsHeaders);
   }
 })

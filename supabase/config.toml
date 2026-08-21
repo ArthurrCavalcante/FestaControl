@@ -4,6 +4,26 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/webhook-receiver/index.ts"
 
+[functions.send-message]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/send-message/index.ts"
+
+[functions.recalculate-state]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/recalculate-state/index.ts"
+
+[functions.analyze-theme]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/analyze-theme/index.ts"
+
+[functions.complete-whatsapp-signup]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/complete-whatsapp-signup/index.ts"
+
 [functions.event-processor]
 enabled = true
 verify_jwt = false

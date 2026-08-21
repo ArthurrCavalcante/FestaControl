@@ -71,7 +71,7 @@ export function CompanyProvider({ children }) {
       // 2. Busca as configurações específicas da empresa dele
       const { data, error } = await supabase
         .from('company_settings')
-        .select('*, companies(nome, documento)')
+        .select('*, companies(nome, documento, is_demo)')
         .eq('company_id', profile.company_id)
         .single();
       
@@ -142,7 +142,7 @@ export function CompanyProvider({ children }) {
         .from('company_settings')
         .update(updates)
         .eq('company_id', settings.company_id)
-        .select('*, companies(nome, documento)')
+        .select('*, companies(nome, documento, is_demo)')
         .single();
 
       if (error) throw error;

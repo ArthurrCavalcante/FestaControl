@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import styles from './FichaCliente.module.css';
 import { useCompany } from '../hooks/useCompany';
 import { supabase } from '../supabaseClient';
-import { addDealNote, uploadDealFile, fetchUnifiedTimeline, fetchThemeHistory } from '../services/dbService';
+import { addDealNote, uploadDealFile, fetchUnifiedTimeline, fetchThemeHistory, createDealFileSignedUrls } from '../services/dbService';
 import { toast } from 'react-hot-toast';
 
 // UI
@@ -35,6 +35,7 @@ export default function FichaCliente({ lead, onClose, onAdvanceStatus, onUpdateL
   const [promptConfig, setPromptConfig] = useState(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [selectedThemePhotos, setSelectedThemePhotos] = useState([]);
+  const [signedFileUrls, setSignedFileUrls] = useState({});
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -47,6 +48,12 @@ export default function FichaCliente({ lead, onClose, onAdvanceStatus, onUpdateL
     setIsLoading(true);
     const tl = await fetchUnifiedTimeline(lead.id);
     setTimeline(tl);
+    try {
+      const urls = await createDealFileSignedUrls(tl.filter(item => item.type === 'FILE').map(item => item.path));
+      setSignedFileUrls(urls);
+    } catch {
+      setSignedFileUrls({});
+    }
     
     if (lead.tema) {
       // Fetch fotos do tema
@@ -64,6 +71,7 @@ export default function FichaCliente({ lead, onClose, onAdvanceStatus, onUpdateL
 
   const openWhatsApp = (e, customMsg = null) => {
     if (e) e.stopPropagation();
+    if (settings?.companies?.is_demo) { toast.error('Ações externas estão desativadas no ambiente demo.'); return; }
     if (!lead || !lead.telefone) return;
     let num = lead.telefone.replace(/\D/g, '');
     if (!num) { toast.error("Telefone inválido"); return; }
@@ -257,8 +265,8 @@ export default function FichaCliente({ lead, onClose, onAdvanceStatus, onUpdateL
                             <div className={styles.timelineDesc} style={{ marginTop: '0.25rem' }}>
                               {item.badge && <Badge variant="secondary" size="sm" style={{ marginRight: '0.5rem' }}>{item.badge}</Badge>}
                               {item.type === 'NOTE' && <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Escrito por {item.author}</span>}
-                              {item.type === 'FILE' && (
-                                <a href={`https://ksbivaolyusmrcblnnfe.supabase.co/storage/v1/object/public/crm/${item.path}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '4px', textDecoration: 'none' }}>
+                              {item.type === 'FILE' && signedFileUrls[item.path] && (
+                                <a href={signedFileUrls[item.path]} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '4px', textDecoration: 'none' }}>
                                   <Eye size={14} /> Visualizar
                                 </a>
                               )}
@@ -303,9 +311,9 @@ export default function FichaCliente({ lead, onClose, onAdvanceStatus, onUpdateL
                     
                     <div className={styles.galleryGrid} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '1rem' }}>
                       {timeline.filter(t => t.type === 'FILE').map(file => (
-                        <a key={file.id} href={`https://ksbivaolyusmrcblnnfe.supabase.co/storage/v1/object/public/crm/${file.path}`} target="_blank" rel="noreferrer" className={styles.galleryItem} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1rem', background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '8px', textDecoration: 'none', color: 'var(--text-color)' }}>
+                        <a key={file.id} href={signedFileUrls[file.path]} target="_blank" rel="noreferrer" className={styles.galleryItem} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1rem', background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '8px', textDecoration: 'none', color: 'var(--text-color)', pointerEvents: signedFileUrls[file.path] ? 'auto' : 'none' }}>
                           {file.original.nome_arquivo.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                            <img src={`https://ksbivaolyusmrcblnnfe.supabase.co/storage/v1/object/public/crm/${file.path}`} alt={file.original.nome_arquivo} style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '4px', marginBottom: '0.5rem' }} />
+                            signedFileUrls[file.path] ? <img src={signedFileUrls[file.path]} alt={file.original.nome_arquivo} style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '4px', marginBottom: '0.5rem' }} /> : <ImageIcon size={32} opacity={0.6} style={{ marginBottom: '0.5rem' }} />
                           ) : (
                             <FileText size={32} opacity={0.6} style={{ marginBottom: '0.5rem' }} />
                           )}

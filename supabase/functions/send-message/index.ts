@@ -1,92 +1,65 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { ProviderFactory } from "../_shared/providers/ProviderFactory.ts";
+import { errorResponse, HttpError, requireLiveTenant, requireTenantResource } from "../_shared/auth.ts";
+import { loadSupabaseRequestContext } from "../_shared/supabase-auth.ts";
+import { captureEdgeError } from "../_shared/observability.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
-  // CORS Preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
-
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { conversation_id, content } = await req.json();
-
-    if (!conversation_id || !content) {
-      return new Response(JSON.stringify({ error: 'Missing required parameters' }), { 
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
+    const context = await loadSupabaseRequestContext(req);
+    const body = await req.json();
+    const conversationId = body?.conversation_id;
+    const content = body?.content;
+    if (typeof conversationId !== "string" || typeof content !== "string" || !content.trim() || content.length > 4_000) {
+      throw new HttpError(400, "Invalid request payload");
     }
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), { status: 401, headers: corsHeaders });
-    }
+    const { data: conversation, error: conversationError } = await context.client
+      .from("conversations")
+      .select("remetente_id, canal, company_id")
+      .eq("id", conversationId)
+      .eq("company_id", context.companyId)
+      .maybeSingle();
+    if (conversationError) throw conversationError;
+    const authorizedConversation = requireTenantResource(conversation, context.companyId);
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    requireLiveTenant(context);
+    const provider = ProviderFactory.getProviderByName(authorizedConversation.canal);
+    if (!provider) throw new HttpError(400, "Unsupported channel");
+    const sendResult = await provider.send(authorizedConversation.remetente_id, content, {});
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized', details: authError?.message }), { status: 401, headers: corsHeaders });
-    }
-
-    // Buscar Dados da Conversa (Canal, Remetente e Empresa)
-    const { data: conversation, error: convError } = await supabaseAdmin
-      .from('conversations')
-      .select('remetente_id, canal, company_id')
-      .eq('id', conversation_id)
+    const { data: newMessage, error: insertError } = await context.client
+      .from("messages")
+      .insert({
+        company_id: context.companyId,
+        conversation_id: conversationId,
+        direction: "OUTBOUND",
+        sender_type: "HUMAN",
+        content,
+        provider_message_id: sendResult.providerMessageId,
+      })
+      .select()
       .single();
-
-    if (convError || !conversation) {
-      return new Response(JSON.stringify({ error: 'Conversation not found' }), { status: 404, headers: corsHeaders });
-    }
-
-    // As credenciais do provider estão configuradas nas variáveis de ambiente do Supabase.
-    const metadata = {};
-
-    const provider = ProviderFactory.getProviderByName(conversation.canal);
-
-    if (!provider) {
-      return new Response(JSON.stringify({ error: 'Unsupported channel' }), { status: 400, headers: corsHeaders });
-    }
-
-    // Disparar Mensagem pelo Provider
-    const sendResult = await provider.send(conversation.remetente_id, content, metadata);
-
-    // Salvar a Mensagem Enviada (OUTBOUND) no Banco
-    const { data: newMsg, error: insertError } = await supabaseAdmin.from('messages').insert({
-      company_id: conversation.company_id,
-      conversation_id,
-      direction: 'OUTBOUND',
-      sender_type: 'HUMAN',
-      content,
-      provider_message_id: sendResult.providerMessageId
-    }).select().single();
-
     if (insertError) throw insertError;
 
-    // Atualiza last_activity
-    await supabaseAdmin.from('conversations').update({
-      last_message: content,
-      last_activity: new Date().toISOString()
-    }).eq('id', conversation_id);
+    const { error: updateError } = await context.client
+      .from("conversations")
+      .update({ last_message: content, last_activity: new Date().toISOString() })
+      .eq("id", conversationId)
+      .eq("company_id", context.companyId);
+    if (updateError) throw updateError;
 
-    return new Response(JSON.stringify({ success: true, message: newMsg }), { 
-      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    return new Response(JSON.stringify({ success: true, message: newMessage }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-
   } catch (error) {
-    console.error('Send Message Error:', error);
-    return new Response(JSON.stringify({ error: error.message }), { 
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    });
+    if (!(error instanceof HttpError)) await captureEdgeError(error, "send-message", req);
+    return errorResponse(error, corsHeaders);
   }
 });
