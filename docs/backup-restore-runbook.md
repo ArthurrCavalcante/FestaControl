@@ -21,6 +21,8 @@ The default destination is `C:\Users\Daniele\Documents\FestaFlow-Backups`. Each 
 
 The backup is accepted only when encrypted artifact checksums, restored core-table counts, and every exported Storage object hash match. Plaintext temporary files are removed from the Windows temporary directory in a `finally` block.
 
+The local PostgreSQL restore omits Supabase-managed extension objects (`pg_net`, `supabase_vault`, and related extension schemas) that are unavailable outside Supabase. The application schemas checked by the drill are still `public`, `auth`, and `storage`; this omission does not alter the encrypted production dump.
+
 ## Recovery drill
 
 Run the restore command after every material schema change and at least monthly. Record the operator, date, duration, backup-set path, and the result from `restore-report.json`. A checksum without a successful restore is not recovery evidence.

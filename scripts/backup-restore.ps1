@@ -64,7 +64,12 @@ function Get-SchemaFingerprint([string]$HostName, [int]$Port, [string]$User, [st
     $value = & "$PostgresBin\psql.exe" -X -A -t -h $HostName -p $Port -U $User -d $Database -c $query
     if ($LASTEXITCODE -ne 0) { throw 'Could not fingerprint the database schema.' }
     $bytes = [Text.Encoding]::UTF8.GetBytes(($value -join "`n"))
-    return [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
+    $hasher = [Security.Cryptography.SHA256]::Create()
+    try {
+      return ([BitConverter]::ToString($hasher.ComputeHash($bytes))).Replace('-', '').ToLowerInvariant()
+    } finally {
+      $hasher.Dispose()
+    }
   } finally {
     $env:PGPASSWORD = $oldPassword
   }
@@ -76,7 +81,8 @@ function Get-StorageObjects([string]$Bucket, [string]$Prefix = '') {
   $offset = 0
   do {
     $body = @{ prefix = $Prefix; limit = 1000; offset = $offset; sortBy = @{ column = 'name'; order = 'asc' } } | ConvertTo-Json -Depth 4
-    $items = @(Invoke-RestMethod -Method Post -Uri "$SupabaseUrl/storage/v1/object/list/$Bucket" -Headers $headers -ContentType 'application/json' -Body $body)
+    $response = Invoke-RestMethod -Method Post -Uri "$SupabaseUrl/storage/v1/object/list/$Bucket" -Headers $headers -ContentType 'application/json' -Body $body
+    $items = @($response | ForEach-Object { $_ })
     foreach ($item in $items) {
       $path = if ($Prefix) { "$Prefix/$($item.name)" } else { $item.name }
       if ($item.id) {
@@ -99,7 +105,11 @@ function Export-Storage([string]$Destination) {
       $parent = Split-Path -Parent $target
       New-Item -ItemType Directory -Path $parent -Force | Out-Null
       $encodedPath = (($objectPath -split '/') | ForEach-Object { [Uri]::EscapeDataString($_) }) -join '/'
-      Invoke-WebRequest -Uri "$SupabaseUrl/storage/v1/object/$bucket/$encodedPath" -Headers $headers -OutFile $target
+      try {
+        Invoke-WebRequest -Uri "$SupabaseUrl/storage/v1/object/$bucket/$encodedPath" -Headers $headers -OutFile $target
+      } catch {
+        throw "Could not export Storage object ${bucket}/${objectPath}: $($_.Exception.Message)"
+      }
       $hashes["$bucket/$objectPath"] = (Get-FileHash -Algorithm SHA256 -LiteralPath $target).Hash.ToLowerInvariant()
     }
   }
@@ -189,7 +199,12 @@ function Restore-Backup {
     Invoke-Checked "$PostgresBin\createdb.exe" @('-h', 'localhost', '-p', "$LocalPort", '-U', 'postgres', $LocalDatabase)
     $rolesSql = "DO `$`$ DECLARE r text; BEGIN FOREACH r IN ARRAY ARRAY['anon','authenticated','service_role','authenticator','supabase_admin','supabase_auth_admin','supabase_storage_admin','dashboard_user'] LOOP IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname=r) THEN EXECUTE format('CREATE ROLE %I NOLOGIN',r); END IF; END LOOP; END `$`$;"
     Invoke-Checked "$PostgresBin\psql.exe" @('-X', '-h', 'localhost', '-p', "$LocalPort", '-U', 'postgres', '-d', $LocalDatabase, '-c', $rolesSql)
-    Invoke-Checked "$PostgresBin\pg_restore.exe" @('--exit-on-error', '--no-owner', '--no-privileges', '-h', 'localhost', '-p', "$LocalPort", '-U', 'postgres', '-d', $LocalDatabase, $dump)
+    $restoreList = Join-Path $tempDirectory 'restore.list'
+    $unsupportedLocalExtensions = 'pg_net', 'supabase_vault', 'pgsodium', 'pg_graphql', 'pgjwt', 'pg_hashids', 'wrappers'
+    $extensionPattern = '\b(' + ($unsupportedLocalExtensions -join '|') + ')\b'
+    & "$PostgresBin\pg_restore.exe" -l $dump | Where-Object { $_ -notmatch $extensionPattern } | Set-Content -LiteralPath $restoreList -Encoding utf8
+    if ($LASTEXITCODE -ne 0) { throw 'Could not generate the restore catalog.' }
+    Invoke-Checked "$PostgresBin\pg_restore.exe" @('--exit-on-error', '--no-owner', '--no-privileges', '-N', 'vault', '-L', $restoreList, '-h', 'localhost', '-p', "$LocalPort", '-U', 'postgres', '-d', $LocalDatabase, $dump)
     $restoredCounts = Get-CoreCounts 'localhost' $LocalPort 'postgres' $LocalDatabase $env:FESTAFLOW_LOCAL_PG_PASSWORD
     $restoredSchemaFingerprint = Get-SchemaFingerprint 'localhost' $LocalPort 'postgres' $LocalDatabase $env:FESTAFLOW_LOCAL_PG_PASSWORD
 
