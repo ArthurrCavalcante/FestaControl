@@ -7,20 +7,26 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "npm run test:edge",
+    "test:edge": "deno test supabase/functions/_shared/*_test.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.110.0",
+    "@sentry/react": "10.70.0",
+    "@supabase/supabase-js": "2.112.3",
     "lucide-react": "^1.23.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-hot-toast": "^2.6.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.62.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "oxlint": "^1.71.0",
+    "supabase": "2.115.0",
     "vite": "^8.1.1"
   }
 }
