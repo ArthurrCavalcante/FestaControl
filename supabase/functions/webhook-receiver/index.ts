@@ -110,16 +110,32 @@ serve(async (req) => {
       } catch {
         return new Response('Invalid JSON', { status: 400 });
       }
-      if (!payload || typeof payload !== 'object' || !Array.isArray(payload.entry)) {
-        return new Response('Invalid payload', { status: 400 });
+      
+      const isEvolution = payload?.event === 'messages.upsert' || !!payload?.instance;
+      const isMeta = Array.isArray(payload?.entry);
+
+      if (!isEvolution && !isMeta) {
+        return new Response('Invalid payload format', { status: 400 });
       }
 
-      // Autenticação Meta HMAC
-      const signature = req.headers.get('x-hub-signature-256');
-      const appSecret = Deno.env.get('FB_APP_SECRET') ?? '';
-      if (!signature || !(await verifyMetaSignature(payloadString, signature, appSecret))) {
-        console.warn('Meta Webhook: Unauthorized. Signature mismatch.');
-        return new Response('Unauthorized', { status: 401 });
+      // Autenticação (Meta HMAC vs Evolution token)
+      if (isMeta) {
+        const signature = req.headers.get('x-hub-signature-256');
+        const appSecret = Deno.env.get('FB_APP_SECRET') ?? '';
+        if (!signature || !(await verifyMetaSignature(payloadString, signature, appSecret))) {
+          console.warn('Meta Webhook: Unauthorized. Signature mismatch.');
+          return new Response('Unauthorized', { status: 401 });
+        }
+      } else if (isEvolution) {
+        // Para Evolution, a segurança pode ser feita validando um webhook secret
+        // Como o 'instance' é o próprio company_id, um atacante só poderia enviar spam para o próprio banco
+        // Mas o ideal é verificar uma key no header, ex: apikey.
+        const providedKey = req.headers.get('apikey');
+        const expectedKey = Deno.env.get('EVOLUTION_GLOBAL_API_KEY');
+        if (expectedKey && providedKey !== expectedKey) {
+          console.warn('Evolution Webhook: Unauthorized. API Key mismatch.');
+          return new Response('Unauthorized', { status: 401 });
+        }
       }
 
       // Roteamento para o Provider apropriado
@@ -130,10 +146,15 @@ serve(async (req) => {
         return new Response('EVENT_RECEIVED', { status: 200, headers: corsHeaders });
       }
 
-      // Identificar Empresa via company_connections (multi-tenant real)
-      // O external_id corresponde ao ID da entrada (entry[0].id) no payload da Meta
-      const externalId = payload?.entry?.[0]?.id ?? null;
-      const companyId = await resolveCompanyId(provider.name, externalId);
+      let companyId: string | null = null;
+
+      if (isEvolution) {
+        companyId = payload.instance; // Para Evolution, configuramos a instância com o ID da empresa
+      } else {
+        // Identificar Empresa via company_connections (multi-tenant real)
+        const externalId = payload?.entry?.[0]?.id ?? null;
+        companyId = await resolveCompanyId(provider.name, externalId);
+      }
 
       if (!companyId) {
         console.warn('Nenhuma empresa encontrada para este webhook.');

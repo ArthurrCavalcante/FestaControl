@@ -45,17 +45,60 @@ export default function Configuracoes() {
     const confirm = window.confirm("Tem certeza que deseja desconectar o WhatsApp?");
     if (!confirm) return;
     
-    // Na fase 1, apenas alteramos o status local. Idealmente chamaria um endpoint na Evolution para logout.
-    await updateSettings({ whatsapp_status: 'disconnected' });
-    toast.success('WhatsApp desconectado.');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-session`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+      await updateSettings({ whatsapp_status: 'disconnected' });
+      toast.success('WhatsApp desconectado.');
+    } catch (e) {
+      toast.error('Erro ao desconectar.');
+    }
   };
 
   if (loading) return <div style={{ padding: '2rem' }}>Carregando configurações...</div>;
 
   return (
     <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      
-
+      <div>
+        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Integração WhatsApp (Evolution API)</h2>
+        <Card padding="lg">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h3 style={{ margin: 0 }}>Status: {settings?.whatsapp_status === 'connected' ? '🟢 Conectado' : (settings?.whatsapp_status === 'connecting' ? '🟡 Aguardando QR Code' : '🔴 Desconectado')}</h3>
+              <p style={{ color: 'var(--text-secondary)', margin: '0.5rem 0 0' }}>Conecte seu aparelho para receber e enviar mensagens pelo CRM.</p>
+            </div>
+            
+            {settings?.whatsapp_status === 'connected' ? (
+               <Button onClick={handleDesconectar} variant="danger">Desconectar</Button>
+            ) : (
+               <Button onClick={async () => {
+                 try {
+                   const { data: { session } } = await supabase.auth.getSession();
+                   const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-session`, {
+                     method: 'POST',
+                     headers: { 'Authorization': `Bearer ${session.access_token}` }
+                   });
+                   const json = await res.json();
+                   if (json.base64) {
+                      // Para facilitar o protótipo, podemos abrir o QR Code numa nova aba ou modal simples
+                      const image = new Image();
+                      image.src = json.base64;
+                      const w = window.open("");
+                      w.document.write(image.outerHTML);
+                   }
+                 } catch (e) {
+                   toast.error('Erro ao conectar.');
+                 }
+               }}>
+                 Conectar WhatsApp
+               </Button>
+            )}
+          </div>
+        </Card>
+      </div>
 
       <div>
         <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Dados da Empresa</h2>
