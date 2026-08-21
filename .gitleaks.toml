@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Generated graph analysis cache contains content hashes, not credentials"
+paths = ['''^graphify-out/''']
