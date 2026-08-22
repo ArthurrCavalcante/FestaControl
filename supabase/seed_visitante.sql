@@ -1,5 +1,5 @@
--- Script para popular os dados de demonstração da conta de Visitante (FestaFlow Demo)
--- ATENÇÃO: ANTES DE RODAR ESTE SCRIPT, CRIE O USUÁRIO visitante@festaflow.com NO PAINEL AUTH DO SUPABASE.
+-- Script para popular os dados de demonstração da conta de Visitante (FestaControl Demo)
+-- ATENÇÃO: ANTES DE RODAR ESTE SCRIPT, CRIE O USUÁRIO visitante@FestaControl.com NO PAINEL AUTH DO SUPABASE.
 
 -- 1. Garante que a migração da coluna 'checklist' existe na tabela events
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS checklist JSONB DEFAULT '{}'::jsonb;
@@ -25,10 +25,10 @@ DECLARE
   v_deal_pedro UUID := gen_random_uuid();
 BEGIN
   -- Buscar o ID do usuário visitante cadastrado no Auth
-  SELECT id INTO v_user_id FROM auth.users WHERE email = 'visitante@festaflow.com';
+  SELECT id INTO v_user_id FROM auth.users WHERE email = 'visitante@FestaControl.com';
 
   IF v_user_id IS NULL THEN
-    RAISE EXCEPTION 'Usuário visitante@festaflow.com não encontrado. Crie o usuário primeiro no painel Authentication do Supabase.';
+    RAISE EXCEPTION 'Usuário visitante@FestaControl.com não encontrado. Crie o usuário primeiro no painel Authentication do Supabase.';
   END IF;
 
   -- Garantir que a empresa Demo existe na tabela de empresas

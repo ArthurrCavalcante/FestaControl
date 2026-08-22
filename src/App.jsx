@@ -191,11 +191,11 @@ export default function App() {
 
   useEffect(() => {
     if (!session) {
-      document.title = session === undefined ? 'FestaFlow' : 'Entrar · FestaFlow';
+      document.title = session === undefined ? 'FestaControl' : 'Entrar · FestaControl';
       return;
     }
     const section = pageTitles[activeTab];
-    document.title = section ? `${section} · FestaFlow` : 'FestaFlow';
+    document.title = section ? `${section} · FestaControl` : 'FestaControl';
   }, [activeTab, session]);
 
   useEffect(() => {
@@ -647,9 +647,9 @@ export default function App() {
           {settings?.logo_url ? (
             <img src={settings.logo_url} alt="Logo" className={styles.brandLogo} style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover' }} />
           ) : (
-            <img src="/logo-icon.png" alt="FestaFlow Logo" style={{ width: 44, height: 44, objectFit: 'contain' }} />
+            <img src="/logo-icon.png" alt="FestaControl Logo" style={{ width: 44, height: 44, objectFit: 'contain' }} />
           )}
-          <h2 className={styles.brandText}>{settings?.companies?.nome || 'FestaFlow'}</h2>
+          <h2 className={styles.brandText}>{settings?.companies?.nome || 'FestaControl'}</h2>
         </button>
         
         <div className={styles.newActionContainer}>
@@ -761,7 +761,7 @@ export default function App() {
                 textOverflow: 'ellipsis'
               }}
             >
-              {activeTab === 'dashboard' ? (settings?.companies?.nome || 'FestaFlow') : 
+              {activeTab === 'dashboard' ? (settings?.companies?.nome || 'FestaControl') : 
                activeTab === 'pipeline' ? 'Pipeline' : 
                activeTab === 'leads' ? 'Clientes' :
                activeTab === 'agenda' ? 'Agenda' :
@@ -771,7 +771,7 @@ export default function App() {
                activeTab === 'catalogo' ? 'Galeria' :
                activeTab === 'configuracoes' ? 'Configurar' :
                activeTab === 'perfil' ? 'Perfil' :
-               'FestaFlow'}
+               'FestaControl'}
             </h1>
           </div>
           <div className={styles.userProfile}>

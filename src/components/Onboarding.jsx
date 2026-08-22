@@ -55,7 +55,7 @@ export default function Onboarding({ onComplete }) {
           <div style={{ background: 'var(--primary-light)', color: 'var(--primary)', width: 64, height: 64, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
             <Package size={32} />
           </div>
-          <h1 style={{ fontSize: '1.5rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Bem-vindo ao FestaFlow!</h1>
+          <h1 style={{ fontSize: '1.5rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Bem-vindo ao FestaControl!</h1>
           <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.95rem' }}>
             Para começar, precisamos de alguns detalhes sobre você e sua empresa.
           </p>

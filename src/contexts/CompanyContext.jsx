@@ -4,7 +4,7 @@ import { logError } from '../services/dbService';
 
 export const CompanyContext = createContext({});
 
-const CACHE_KEY = 'festaflow_company_settings';
+const CACHE_KEY = 'FestaControl_company_settings';
 
 export function CompanyProvider({ children }) {
   // Inicializa o estado a partir do cache (se existir) para evitar Skeletons em reloads

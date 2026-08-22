@@ -140,7 +140,7 @@ export default function ImportarClientesModal({ onClose, onSuccess }) {
       {!previewData ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '500px', maxWidth: '100%' }}>
           <p style={{ color: 'var(--text-secondary)' }}>
-            Traga seus contatos do WhatsApp e agendas antigas para o FestaFlow.
+            Traga seus contatos do WhatsApp e agendas antigas para o FestaControl.
           </p>
 
           <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>

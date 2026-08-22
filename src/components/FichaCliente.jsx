@@ -77,7 +77,7 @@ export default function FichaCliente({ lead, onClose, onAdvanceStatus, onUpdateL
     if (!num) { toast.error("Telefone inválido"); return; }
     if (num.length <= 11) num = '55' + num;
     
-    let msg = customMsg || `Olá ${lead.nome}, tudo bem? Aqui é da ${settings?.companies?.nome || 'FestaFlow'}.`;
+    let msg = customMsg || `Olá ${lead.nome}, tudo bem? Aqui é da ${settings?.companies?.nome || 'FestaControl'}.`;
     if (!customMsg && lead.status === 'NEGOCIACAO' && settings?.pix_key) {
       msg += ` Segue nossa chave PIX para confirmar a reserva do seu evento: ${settings.pix_key}`;
     }

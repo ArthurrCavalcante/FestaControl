@@ -92,13 +92,13 @@ BEGIN
   SELECT id INTO v_main_company_id FROM public.companies WHERE id != v_demo_company_id LIMIT 1;
   IF v_main_company_id IS NULL THEN
      v_main_company_id := gen_random_uuid();
-     INSERT INTO public.companies (id, nome) VALUES (v_main_company_id, 'Minha Empresa FestaFlow');
+     INSERT INTO public.companies (id, nome) VALUES (v_main_company_id, 'Minha Empresa FestaControl');
      INSERT INTO public.company_settings (company_id, primary_color) VALUES (v_main_company_id, '#6366f1');
   END IF;
 
   INSERT INTO public.profiles (id, user_id, company_id, nome, role)
   SELECT id, id, v_main_company_id, 'Administrador Principal', 'admin' 
-  FROM auth.users WHERE email != 'visitante@festaflow.com'
+  FROM auth.users WHERE email != 'visitante@FestaControl.com'
   ON CONFLICT (id) DO UPDATE SET company_id = v_main_company_id;
 
   UPDATE public.leads SET company_id = v_main_company_id WHERE company_id IS NULL;

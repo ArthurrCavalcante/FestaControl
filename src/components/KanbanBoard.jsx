@@ -24,7 +24,7 @@ export default function KanbanBoard({ leads, onLeadSelect, onMoveLead, acervo = 
     if (!num) { toast.error("Telefone inválido"); return; }
     if (num.length <= 11) num = '55' + num;
     
-    const companyName = settings?.companies?.nome || 'FestaFlow';
+    const companyName = settings?.companies?.nome || 'FestaControl';
     const msg = interesse && interesse !== '-' 
       ? `Olá ${nome}, tudo bem? Aqui é da ${companyName}. Vi que você tem interesse no tema ${interesse}.` 
       : `Olá ${nome}, tudo bem? Aqui é da ${companyName}.`;

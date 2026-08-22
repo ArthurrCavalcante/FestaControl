@@ -9,7 +9,7 @@ WHERE id = '00000000-0000-0000-0000-000000000001'
      SELECT p.company_id
      FROM public.profiles p
      JOIN auth.users u ON u.id = p.user_id
-     WHERE u.email = 'visitante@festaflow.com'
+     WHERE u.email = 'visitante@FestaControl.com'
    );
 
 -- Replace every legacy object policy with the two documented bucket contracts.

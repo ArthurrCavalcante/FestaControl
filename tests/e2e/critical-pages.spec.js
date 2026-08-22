@@ -28,7 +28,7 @@ test('login remains visually stable', async ({ page }) => {
 });
 
 test.describe('authenticated critical pages', () => {
-  test.skip(process.env.E2E_DEMO_ENABLED !== 'true', 'Requires the read-only FestaFlow demo account.');
+  test.skip(process.env.E2E_DEMO_ENABLED !== 'true', 'Requires the read-only FestaControl demo account.');
 
   test('Kanban remains visually stable', async ({ page }) => {
     await signInAsDemo(page);

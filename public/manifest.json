@@ -1,6 +1,6 @@
 {
-  "name": "FestaFlow",
-  "short_name": "FestaFlow",
+  "name": "FestaControl",
+  "short_name": "FestaControl",
   "description": "Organize clientes, orçamentos, agenda, acervo e operação de festas.",
   "start_url": "/",
   "display": "standalone",

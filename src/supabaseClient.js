@@ -5,7 +5,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error(
-    '[FestaFlow] ERRO CRÍTICO: Variáveis de ambiente do Supabase não encontradas.\n' +
+    '[FestaControl] ERRO CRÍTICO: Variáveis de ambiente do Supabase não encontradas.\n' +
     'Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no painel do Vercel.'
   );
 }

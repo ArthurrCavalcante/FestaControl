@@ -1,4 +1,4 @@
--- FestaFlow — Fase 1: segurança, isolamento de tenant e índices essenciais.
+-- FestaControl — Fase 1: segurança, isolamento de tenant e índices essenciais.
 --
 -- Esta migration remove políticas legadas permissivas que anulam o isolamento
 -- multi-tenant já definido pelas políticas "Isolate tenant ...".

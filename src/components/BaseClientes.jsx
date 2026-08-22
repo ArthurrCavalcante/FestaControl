@@ -53,7 +53,7 @@ export default function BaseClientes({ leads, onCadastrarManual, onGerarOrcament
     let num = telefone.replace(/\D/g, '');
     if (!num) { toast.error("Telefone inválido"); return; }
     if (num.length <= 11) num = '55' + num;
-    const msg = `Olá ${nome}, tudo bem? Aqui é da FestaFlow.`;
+    const msg = `Olá ${nome}, tudo bem? Aqui é da FestaControl.`;
     window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 

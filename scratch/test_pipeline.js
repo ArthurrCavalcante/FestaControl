@@ -39,10 +39,10 @@ async function runScenario(scenarioNum, type, content, mediaUrl = null) {
   let { data: company, error: compErr } = await supabase.from('companies').select('id').limit(1).single();
   
   if (compErr || !company) {
-    console.log('⚠️ Nenhuma empresa cadastrada. Criando empresa dummy "FestaFlow Testes"...');
+    console.log('⚠️ Nenhuma empresa cadastrada. Criando empresa dummy "FestaControl Testes"...');
     const { data: newComp, error: newCompErr } = await supabase
       .from('companies')
-      .insert({ nome: 'FestaFlow Testes' })
+      .insert({ nome: 'FestaControl Testes' })
       .select('id')
       .single();
       

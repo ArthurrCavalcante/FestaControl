@@ -50,7 +50,7 @@ export default function Login() {
     <div className={styles.container}>
       <Card padding="lg" className={styles.cardOverrides}>
         <div className={styles.logoContainer}>
-          <h2 className={styles.title}>FestaFlow CRM</h2>
+          <h2 className={styles.title}>FestaControl CRM</h2>
           <p className={styles.subtitle}>
             {isRecoveryMode ? 'Recuperação de Senha' : 'Acesse seu painel administrativo'}
           </p>
@@ -74,7 +74,7 @@ export default function Login() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 className={styles.input}
-                placeholder="admin@festaflow.com"
+                placeholder="admin@FestaControl.com"
               />
             </div>
           </div>
@@ -114,7 +114,7 @@ export default function Login() {
                 onClick={async () => {
                   setLoading(true);
                   setError(null);
-                  const { error } = await supabase.auth.signInWithPassword({ email: 'visitante@festaflow.com', password: 'demo-password' });
+                  const { error } = await supabase.auth.signInWithPassword({ email: 'visitante@FestaControl.com', password: 'demo-password' });
                   if (error) setError('Conta de visitante não configurada no banco de dados.');
                   setLoading(false);
                 }}

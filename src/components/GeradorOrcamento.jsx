@@ -133,7 +133,7 @@ export default function GeradorOrcamento({ onClose, onAddLead, prefilledLead = n
       return;
     }
     
-    const companyName = settings?.companies?.nome || 'FestaFlow';
+    const companyName = settings?.companies?.nome || 'FestaControl';
     const msg = `Olá ${nomeLead}! 🥳\nAqui é da ${companyName}. Segue o orçamento para a sua festa:\n\n*Tema:* ${finalTemaNome}\n*Data:* ${dataFesta || 'A definir'} às ${horaFesta || 'A definir'}\n*Itens Inclusos:* ${itensFesta || 'Padrão do kit'}\n*Total:* R$ ${kit?.preco.toFixed(2) || '0.00'}\n\nPara confirmar a reserva e garantir a data, peço um sinal de 50%. Como prefere fazer?`;
     const zapLink = `https://wa.me/55${telefoneLead.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
     setLink(zapLink);
@@ -281,7 +281,7 @@ export default function GeradorOrcamento({ onClose, onAddLead, prefilledLead = n
           ) : (
             <div className={styles.successState}>
               <div className={styles.successIconWrapper}>
-                <img src="/logo-icon.png" alt="FestaFlow" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+                <img src="/logo-icon.png" alt="FestaControl" style={{ width: 40, height: 40, objectFit: 'contain' }} />
               </div>
               <h2 className={styles.successTitle}>Orçamento Gerado!</h2>
               <p className={styles.successText}>

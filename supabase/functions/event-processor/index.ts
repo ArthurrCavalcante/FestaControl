@@ -5,7 +5,7 @@ import { MediaService } from "../_shared/services/MediaService.ts";
 import { captureEdgeError } from "../_shared/observability.ts";
 
 const ALLOWED_ORIGINS = [
-  'https://festaflow-crm.vercel.app',
+  'https://FestaControl-crm.vercel.app',
   'http://localhost:5173',
   'http://localhost:3000',
 ];

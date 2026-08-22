@@ -1,6 +1,6 @@
-# 🎉 FestaFlow
+# 🎉 FestaControl
 
-**🌍 Acesso ao Sistema:** [https://festaflow-crm.vercel.app](https://festaflow-crm.vercel.app)
+**🌍 Acesso ao Sistema:** [https://FestaControl-crm.vercel.app](https://FestaControl-crm.vercel.app)
 
 Sistema web de gestão logística, CRM e acervo inteligente para empresas de eventos — construído com React, Supabase e Inteligência Artificial (Gemini API).
 
@@ -13,7 +13,7 @@ Sistema web de gestão logística, CRM e acervo inteligente para empresas de eve
 
 ## 📋 Sobre o Projeto
 
-O **FestaFlow** nasceu para resolver um problema real: a desorganização operacional de uma empresa de eventos que gerenciava festas, acervo de decorações e atendimento ao cliente de forma totalmente manual.
+O **FestaControl** nasceu para resolver um problema real: a desorganização operacional de uma empresa de eventos que gerenciava festas, acervo de decorações e atendimento ao cliente de forma totalmente manual.
 
 ### Funcionalidades Principais
 
@@ -43,8 +43,8 @@ O **FestaFlow** nasceu para resolver um problema real: a desorganização operac
 ### 1. Configuração do Frontend
 ```bash
 # Clone o repositório
-git clone https://github.com/SEU_USUARIO/festaflow.git
-cd festaflow
+git clone https://github.com/SEU_USUARIO/FestaControl.git
+cd FestaControl
 
 # Instale as dependências
 npm install

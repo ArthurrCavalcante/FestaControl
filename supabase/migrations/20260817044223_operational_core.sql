@@ -1,4 +1,4 @@
--- FestaFlow — núcleo operacional: reservas, financeiro e tarefas de evento.
+-- FestaControl — núcleo operacional: reservas, financeiro e tarefas de evento.
 
 -- 1. Estoque físico do acervo.
 ALTER TABLE public.acervo
