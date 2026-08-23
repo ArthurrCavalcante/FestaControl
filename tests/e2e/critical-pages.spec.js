@@ -2,6 +2,13 @@ import { test, expect } from '@playwright/test';
 
 async function stabilize(page) {
   await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(() => {
+    document.querySelectorAll('*').forEach((element) => {
+      if (element.children.length === 0 && /^\d+d$/.test(element.textContent?.trim() || '')) {
+        element.textContent = 'dias';
+      }
+    });
+  });
   await page.addStyleTag({ content: '*, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }' });
 }
 
@@ -19,6 +26,7 @@ async function openSection(page, title) {
   }
   await target.click();
   await expect(page.getByText(/Carregando (informações|operação|módulo)/)).toHaveCount(0, { timeout: 15_000 });
+  await stabilize(page);
 }
 
 test('login remains visually stable', async ({ page }) => {
