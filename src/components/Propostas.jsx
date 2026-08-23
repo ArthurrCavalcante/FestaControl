@@ -1,130 +1,34 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Copy, FilePlus2, Plus, Send, Trash2 } from 'lucide-react';
+import { ArrowUpRight, CalendarDays, CheckCircle2, CircleDollarSign, ClipboardList, Copy, FilePlus2, Link2, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../supabaseClient';
-import styles from './Saas.module.css';
+import styles from './Propostas.module.css';
 
 const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const blankItem = () => ({ description: '', quantity: 1, unit_price: '', unit_cost: '', acervo_id: '' });
+const statusMeta = { draft: ['Rascunho', 'draft'], sent: ['Enviada', 'sent'], viewed: ['Visualizada', 'viewed'], accepted: ['Aceita', 'accepted'], confirmed: ['Confirmada', 'confirmed'], rejected: ['Recusada', 'rejected'], expired: ['Expirada', 'expired'] };
+const date = (value) => value ? new Date(`${value}T12:00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : 'Data a definir';
 
 export default function Propostas() {
-  const [proposals, setProposals] = useState([]);
-  const [deals, setDeals] = useState([]);
-  const [inventory, setInventory] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [links, setLinks] = useState({});
-  const [form, setForm] = useState({ deal_id: '', customer_name: '', event_date: '', event_address: '', theme: '', valid_until: '', discount: 0, terms: 'O evento será confirmado após o pagamento do sinal.', items: [blankItem()] });
-
-  const load = async () => {
-    const [{ data: response }, { data: dealRows }, { data: inventoryRows }] = await Promise.all([
-      supabase.functions.invoke('proposal-service', { method: 'GET' }),
-      supabase.from('deals').select('id, tema, data_festa, endereco, leads(nome, telefone)').order('created_at', { ascending: false }),
-      supabase.from('acervo').select('id, nome').eq('ativo', true).order('nome'),
-    ]);
-    setProposals(response?.proposals ?? []);
-    setDeals(dealRows ?? []);
-    setInventory(inventoryRows ?? []);
-  };
-
+  const [proposals, setProposals] = useState([]); const [deals, setDeals] = useState([]); const [inventory, setInventory] = useState([]);
+  const [showForm, setShowForm] = useState(false); const [busy, setBusy] = useState(false); const [links, setLinks] = useState({}); const [filter, setFilter] = useState('all');
+  const emptyForm = () => ({ deal_id: '', customer_name: '', event_date: '', event_address: '', theme: '', valid_until: '', discount: 0, terms: 'O evento será confirmado após o pagamento do sinal.', items: [blankItem()] });
+  const [form, setForm] = useState(emptyForm);
+  const load = async () => { const [{ data: response }, { data: dealRows }, { data: inventoryRows }] = await Promise.all([supabase.functions.invoke('proposal-service', { method: 'GET' }), supabase.from('deals').select('id, tema, data_festa, endereco, leads(nome, telefone)').order('created_at', { ascending: false }), supabase.from('acervo').select('id, nome').eq('ativo', true).order('nome')]); setProposals(response?.proposals ?? []); setDeals(dealRows ?? []); setInventory(inventoryRows ?? []); };
   useEffect(() => { load(); }, []);
   const total = useMemo(() => form.items.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unit_price || 0), 0) - Number(form.discount || 0), [form]);
-
-  const selectDeal = (dealId) => {
-    const deal = deals.find((row) => row.id === dealId);
-    setForm((current) => ({
-      ...current, deal_id: dealId, customer_name: deal?.leads?.nome || '', event_date: deal?.data_festa || '',
-      event_address: deal?.endereco || '', theme: deal?.tema || '',
-    }));
-  };
-  const updateItem = (index, key, value) => setForm((current) => ({
-    ...current, items: current.items.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: value } : item),
-  }));
-
-  const createProposal = async (event) => {
-    event.preventDefault();
-    setBusy(true);
-    const { data, error } = await supabase.functions.invoke('proposal-service', { body: { action: 'create', ...form } });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    setLinks((current) => ({ ...current, [data.proposal.id]: `${window.location.origin}/proposta/${data.token}` }));
-    setShowForm(false);
-    setForm({ deal_id: '', customer_name: '', event_date: '', event_address: '', theme: '', valid_until: '', discount: 0, terms: 'O evento será confirmado após o pagamento do sinal.', items: [blankItem()] });
-    toast.success('Proposta criada. Revise e envie quando estiver pronta.');
-    await load();
-  };
-
-  const sendProposal = async (proposalId) => {
-    const { data, error } = await supabase.functions.invoke('proposal-service', { body: { action: 'send', proposal_id: proposalId } });
-    if (error) return toast.error(error.message);
-    const link = `${window.location.origin}/proposta/${data.token}`;
-    setLinks((current) => ({ ...current, [proposalId]: link }));
-    await navigator.clipboard.writeText(link);
-    toast.success('Link enviado para a área de transferência.');
-    await load();
-  };
-
-  const confirmDeposit = async (proposal) => {
-    const amount = window.prompt('Valor do sinal recebido:');
-    if (!amount) return;
-    const { error } = await supabase.functions.invoke('proposal-service', {
-      body: { action: 'deposit_received', proposal_id: proposal.id, amount: Number(String(amount).replace(',', '.')), method: 'PIX' },
-    });
-    if (error) return toast.error(error.message);
-    toast.success('Sinal registrado, evento confirmado e acervo reservado.');
-    await load();
-  };
-
-  return (
-    <section className={styles.shell}>
-      <div className={styles.topbar}>
-        <div><h2>Propostas</h2><p className={styles.muted}>Aceite, sinal e margem por versão.</p></div>
-        <button className={styles.button} onClick={() => setShowForm((value) => !value)}><FilePlus2 size={18} /> Nova proposta</button>
-      </div>
-
-      {showForm ? (
-        <form className={styles.form} onSubmit={createProposal}>
-          <div className={styles.grid}>
-            <label className={styles.field}>Negócio<select value={form.deal_id} onChange={(event) => selectDeal(event.target.value)}><option value="">Sem negócio vinculado</option>{deals.map((deal) => <option key={deal.id} value={deal.id}>{deal.leads?.nome || 'Cliente'} · {deal.tema || 'Sem tema'}</option>)}</select></label>
-            <label className={styles.field}>Cliente<input required minLength="2" value={form.customer_name} onChange={(event) => setForm({ ...form, customer_name: event.target.value })} /></label>
-            <label className={styles.field}>Data do evento<input type="date" value={form.event_date} onChange={(event) => setForm({ ...form, event_date: event.target.value })} /></label>
-            <label className={styles.field}>Validade<input type="date" value={form.valid_until} onChange={(event) => setForm({ ...form, valid_until: event.target.value })} /></label>
-            <label className={styles.field}>Tema<input value={form.theme} onChange={(event) => setForm({ ...form, theme: event.target.value })} /></label>
-            <label className={styles.field}>Endereço<input value={form.event_address} onChange={(event) => setForm({ ...form, event_address: event.target.value })} /></label>
-          </div>
-          <h3>Itens</h3>
-          {form.items.map((item, index) => (
-            <div className={styles.grid} key={index}>
-              <label className={styles.field}>Descrição<input required value={item.description} onChange={(event) => updateItem(index, 'description', event.target.value)} /></label>
-              <label className={styles.field}>Peça do acervo<select value={item.acervo_id} onChange={(event) => updateItem(index, 'acervo_id', event.target.value)}><option value="">Não vinculada</option>{inventory.map((row) => <option key={row.id} value={row.id}>{row.nome}</option>)}</select></label>
-              <label className={styles.field}>Quantidade<input type="number" min="0.01" step="0.01" value={item.quantity} onChange={(event) => updateItem(index, 'quantity', event.target.value)} /></label>
-              <label className={styles.field}>Preço unitário<input type="number" min="0" step="0.01" value={item.unit_price} onChange={(event) => updateItem(index, 'unit_price', event.target.value)} /></label>
-              <label className={styles.field}>Custo unitário<input type="number" min="0" step="0.01" value={item.unit_cost} onChange={(event) => updateItem(index, 'unit_cost', event.target.value)} /></label>
-              {form.items.length > 1 ? <button type="button" className={styles.buttonSecondary} onClick={() => setForm({ ...form, items: form.items.filter((_, itemIndex) => itemIndex !== index) })}><Trash2 size={17} /> Remover</button> : null}
-            </div>
-          ))}
-          <div className={styles.actions}><button type="button" className={styles.buttonSecondary} onClick={() => setForm({ ...form, items: [...form.items, blankItem()] })}><Plus size={17} /> Adicionar item</button></div>
-          <div className={styles.grid}>
-            <label className={styles.field}>Desconto<input type="number" min="0" step="0.01" value={form.discount} onChange={(event) => setForm({ ...form, discount: event.target.value })} /></label>
-            <div><span className={styles.muted}>Total</span><div className={styles.total}>{currency.format(Math.max(total, 0))}</div></div>
-          </div>
-          <label className={styles.field}>Condições<textarea value={form.terms} onChange={(event) => setForm({ ...form, terms: event.target.value })} /></label>
-          <div className={styles.actions}><button className={styles.button} disabled={busy}>{busy ? 'Criando...' : 'Criar proposta'}</button><button type="button" className={styles.buttonSecondary} onClick={() => setShowForm(false)}>Cancelar</button></div>
-        </form>
-      ) : null}
-
-      <div className={styles.list} style={{ marginTop: 24 }}>
-        {proposals.length ? proposals.map((proposal) => (
-          <article className={styles.row} key={proposal.id}>
-            <div><strong>{proposal.customer_name}</strong> <span className={styles.status}>{proposal.status}</span><p className={styles.muted}>v{proposal.version} · {currency.format(proposal.total)} · margem estimada {currency.format(proposal.total - proposal.estimated_cost)}</p></div>
-            <div className={styles.actions}>
-              {links[proposal.id] ? <button className={styles.buttonSecondary} title="Copiar link" onClick={() => navigator.clipboard.writeText(links[proposal.id])}><Copy size={17} /></button> : null}
-              {['draft', 'sent', 'viewed'].includes(proposal.status) ? <button className={styles.buttonSecondary} onClick={() => sendProposal(proposal.id)}><Send size={17} /> Gerar link</button> : null}
-              {proposal.status === 'accepted' ? <button className={styles.button} onClick={() => confirmDeposit(proposal)}>Registrar sinal</button> : null}
-            </div>
-          </article>
-        )) : <div className={styles.row}>Nenhuma proposta criada.</div>}
-      </div>
-    </section>
-  );
+  const visible = useMemo(() => filter === 'all' ? proposals : proposals.filter((proposal) => proposal.status === filter), [filter, proposals]);
+  const pipeline = proposals.filter((p) => !['rejected', 'expired'].includes(p.status)).reduce((sum, p) => sum + Number(p.total || 0), 0);
+  const chooseDeal = (id) => { const deal = deals.find((row) => row.id === id); setForm((current) => ({ ...current, deal_id: id, customer_name: deal?.leads?.nome || '', event_date: deal?.data_festa || '', event_address: deal?.endereco || '', theme: deal?.tema || '' })); };
+  const item = (index, key, value) => setForm((current) => ({ ...current, items: current.items.map((row, rowIndex) => rowIndex === index ? { ...row, [key]: value } : row) }));
+  const create = async (event) => { event.preventDefault(); setBusy(true); const { data, error } = await supabase.functions.invoke('proposal-service', { body: { action: 'create', ...form } }); setBusy(false); if (error) return toast.error(error.message); setLinks((current) => ({ ...current, [data.proposal.id]: `${window.location.origin}/proposta/${data.token}` })); setShowForm(false); setForm(emptyForm()); toast.success('Proposta criada. Revise e envie quando estiver pronta.'); await load(); };
+  const send = async (id) => { const { data, error } = await supabase.functions.invoke('proposal-service', { body: { action: 'send', proposal_id: id } }); if (error) return toast.error(error.message); const link = `${window.location.origin}/proposta/${data.token}`; setLinks((current) => ({ ...current, [id]: link })); await navigator.clipboard.writeText(link); toast.success('Link copiado. Agora é só enviar para a cliente.'); await load(); };
+  const deposit = async (proposal) => { const amount = window.prompt('Valor do sinal recebido:'); if (!amount) return; const { error } = await supabase.functions.invoke('proposal-service', { body: { action: 'deposit_received', proposal_id: proposal.id, amount: Number(String(amount).replace(',', '.')), method: 'PIX' } }); if (error) return toast.error(error.message); toast.success('Sinal registrado, evento confirmado e acervo reservado.'); await load(); };
+  return <section className={styles.page}>
+    <header className={styles.header}><div><span className={styles.eyebrow}>COMERCIAL</span><h2>Propostas que ajudam a fechar</h2><p>Do orçamento ao sinal, acompanhe cada conversa sem perder a margem do evento.</p></div><button className={styles.primary} onClick={() => setShowForm((v) => !v)}><FilePlus2 size={18} />{showForm ? 'Fechar criação' : 'Nova proposta'}</button></header>
+    <div className={styles.metrics}><div><span>Em negociação</span><strong>{proposals.filter((p) => ['sent', 'viewed'].includes(p.status)).length}</strong><small>enviadas ou vistas</small></div><div><span>Valor em aberto</span><strong>{currency.format(pipeline)}</strong><small>propostas em andamento</small></div><div><span>Aguardando sinal</span><strong>{proposals.filter((p) => p.status === 'accepted').length}</strong><small>aceites para confirmar</small></div></div>
+    {showForm && <form className={styles.composer} onSubmit={create}><div className={styles.composerHead}><div><span className={styles.eyebrow}>NOVA PROPOSTA</span><h3>Monte uma proposta clara e lucrativa</h3></div><div><span>Valor da proposta</span><strong>{currency.format(Math.max(total, 0))}</strong></div></div><section><h4>Cliente e evento</h4><div className={styles.grid}><label>Negócio<select value={form.deal_id} onChange={(e) => chooseDeal(e.target.value)}><option value="">Sem negócio vinculado</option>{deals.map((d) => <option key={d.id} value={d.id}>{d.leads?.nome || 'Cliente'} · {d.tema || 'Sem tema'}</option>)}</select></label><label>Cliente<input required value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} /></label><label>Data do evento<input type="date" value={form.event_date} onChange={(e) => setForm({ ...form, event_date: e.target.value })} /></label><label>Validade<input type="date" value={form.valid_until} onChange={(e) => setForm({ ...form, valid_until: e.target.value })} /></label><label>Tema<input value={form.theme} onChange={(e) => setForm({ ...form, theme: e.target.value })} /></label><label>Endereço<input value={form.event_address} onChange={(e) => setForm({ ...form, event_address: e.target.value })} /></label></div></section><section><div className={styles.sectionHead}><div><h4>Itens e composição</h4><p>Vincule ao acervo quando precisar reservar peças.</p></div><button type="button" className={styles.secondary} onClick={() => setForm({ ...form, items: [...form.items, blankItem()] })}><Plus size={16} />Adicionar item</button></div>{form.items.map((row, index) => <div className={styles.itemRow} key={index}><label>Descrição<input required value={row.description} onChange={(e) => item(index, 'description', e.target.value)} /></label><label>Peça do acervo<select value={row.acervo_id} onChange={(e) => item(index, 'acervo_id', e.target.value)}><option value="">Não vinculada</option>{inventory.map((i) => <option key={i.id} value={i.id}>{i.nome}</option>)}</select></label><label>Qtd.<input type="number" min="0.01" step="0.01" value={row.quantity} onChange={(e) => item(index, 'quantity', e.target.value)} /></label><label>Preço un.<input type="number" min="0" step="0.01" value={row.unit_price} onChange={(e) => item(index, 'unit_price', e.target.value)} /></label><label>Custo un.<input type="number" min="0" step="0.01" value={row.unit_cost} onChange={(e) => item(index, 'unit_cost', e.target.value)} /></label><button type="button" className={styles.icon} aria-label="Remover item" disabled={form.items.length === 1} onClick={() => setForm({ ...form, items: form.items.filter((_, i) => i !== index) })}><Trash2 size={17} /></button></div>)}</section><section className={styles.finish}><label>Desconto<input type="number" min="0" step="0.01" value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} /></label><label>Condições<textarea value={form.terms} onChange={(e) => setForm({ ...form, terms: e.target.value })} /></label></section><footer><span>Você poderá revisar e gerar o link público antes de enviar.</span><div><button type="button" className={styles.text} onClick={() => { setShowForm(false); setForm(emptyForm()); }}>Cancelar</button><button className={styles.primary} disabled={busy}>{busy ? 'Criando...' : 'Criar proposta'}<ArrowUpRight size={17} /></button></div></footer></form>}
+    <div className={styles.listHead}><div><h3>Suas propostas</h3><p>{proposals.length ? `${proposals.length} propostas no histórico` : 'Comece pela primeira proposta profissional.'}</p></div><div className={styles.filters}>{[['all', 'Todas'], ['sent', 'Em negociação'], ['accepted', 'Aceitas'], ['confirmed', 'Confirmadas']].map(([value, label]) => <button key={value} className={filter === value ? styles.active : ''} onClick={() => setFilter(value)}>{label}</button>)}</div></div>
+    {visible.length ? <div className={styles.list}>{visible.map((proposal) => { const [label, tone] = statusMeta[proposal.status] ?? statusMeta.draft; const margin = Number(proposal.total || 0) - Number(proposal.estimated_cost || 0); const rate = proposal.total ? Math.round((margin / proposal.total) * 100) : 0; return <article className={styles.proposal} key={proposal.id}><div className={styles.main}><span className={styles.initial}>{proposal.customer_name?.slice(0, 1)?.toUpperCase() || 'P'}</span><div><div className={styles.title}><h4>{proposal.customer_name}</h4><span className={`${styles.status} ${styles[tone]}`}>{label}</span></div><p>{proposal.theme || 'Decoração personalizada'} · versão {proposal.version}</p><div className={styles.meta}><span><CalendarDays size={15} />{date(proposal.event_date)}</span><span><ClipboardList size={15} />validade {date(proposal.valid_until)}</span></div></div></div><div className={styles.finance}><span>Valor total</span><strong>{currency.format(proposal.total)}</strong><p><CircleDollarSign size={15} />margem {currency.format(margin)} <b>{rate}%</b></p></div><div className={styles.actions}>{links[proposal.id] && <button className={styles.icon} title="Copiar link público" aria-label="Copiar link público" onClick={() => navigator.clipboard.writeText(links[proposal.id])}><Copy size={17} /></button>}{['draft', 'sent', 'viewed'].includes(proposal.status) && <button className={styles.secondary} onClick={() => send(proposal.id)}><Link2 size={16} />Gerar link</button>}{proposal.status === 'accepted' && <button className={styles.primary} onClick={() => deposit(proposal)}><CheckCircle2 size={16} />Registrar sinal</button>}</div></article>; })}</div> : <div className={styles.empty}><FilePlus2 size={26} /><h3>{filter === 'all' ? 'Sua primeira venda começa aqui' : 'Nenhuma proposta nesse estágio'}</h3><p>Crie uma proposta com itens, condições e um link que a cliente pode aceitar.</p>{filter === 'all' && <button className={styles.primary} onClick={() => setShowForm(true)}>Criar proposta <ArrowUpRight size={17} /></button>}</div>}
+  </section>;
 }
