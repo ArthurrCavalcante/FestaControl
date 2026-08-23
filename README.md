@@ -2,7 +2,7 @@
 
 **🌍 Acesso ao Sistema:** [https://FestaControl-crm.vercel.app](https://FestaControl-crm.vercel.app)
 
-Sistema web de gestão logística, CRM e acervo inteligente para empresas de eventos — construído com React, Supabase e Inteligência Artificial (Gemini API).
+SaaS de propostas, CRM, acervo, operação e margem para empresas de decoração de festas, construído com React, Supabase e Gemini.
 
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
@@ -22,6 +22,9 @@ O **FestaControl** nasceu para resolver um problema real: a desorganização ope
 - **Catálogo e Acervo Inteligente:** Galeria de decorações com busca semântica por IA — digite "festa rústica com girassóis" e encontre a foto exata.
 - **Caixa de Entrada (Avisos):** Sistema de lembretes automáticos para festas próximas com disparo direto para o WhatsApp.
 - **Gerador de Orçamentos:** Formulário inteligente que monta o orçamento, calcula o valor e cria o card no pipeline automaticamente.
+- **Propostas Públicas:** Versões imutáveis após o aceite, PIX, impressão em PDF e confirmação somente após o sinal.
+- **Custos e Margem:** Despesas estimadas e reais, avarias, perdas e margem por evento.
+- **Equipe e Assinatura:** Papéis aplicados no servidor, convites e Plano Fundador para até três pessoas.
 - **Base de Clientes:** CRM completo com histórico de interações, fichas detalhadas e filtros avançados.
 - **Triagem de Orçamentos com IA:** Integração com a API do Gemini para transformar mensagens desestruturadas de clientes em dados organizados no banco.
 
@@ -31,7 +34,7 @@ O **FestaControl** nasceu para resolver um problema real: a desorganização ope
 
 | Camada | Tecnologia |
 |---|---|
-| **Front-end** | React 18, Vite, CSS Modules |
+| **Front-end** | React 19, React Router, Vite, CSS Modules |
 | **Back-end / BaaS** | Supabase (PostgreSQL, Auth, Storage, RLS) |
 | **Inteligência Artificial** | Google Gemini API (texto + visão) |
 | **Deploy** | Vercel |
@@ -64,6 +67,8 @@ As Edge Functions rodam no ambiente do Supabase e precisam de variáveis (secret
 - `FB_APP_SECRET`: Secret do App Meta (Facebook) para validar a assinatura do Webhook.
 - `FB_VERIFY_TOKEN`: Token configurado por você no painel da Meta para verificação inicial.
 - `INSTAGRAM_ACCESS_TOKEN`: Token permanente para enviar respostas e ler dados da Graph API.
+- `EVOLUTION_API_URL`, `EVOLUTION_GLOBAL_API_KEY` e `EVOLUTION_WEBHOOK_SECRET`: provider WhatsApp beta e autenticação do webhook.
+- `SENTRY_DSN` e `SENTRY_ENVIRONMENT`: observabilidade das Edge Functions; sem DSN, permanece desativada.
 
 Para configurar localmente e fazer deploy das funções:
 ```bash
@@ -92,3 +97,7 @@ src/
 ## 📄 Licença
 
 Este projeto é de uso pessoal/portfólio.
+
+## Operação do piloto
+
+Consulte [docs/pilot-launch-runbook.md](docs/pilot-launch-runbook.md) e [docs/backup-restore-runbook.md](docs/backup-restore-runbook.md) antes do primeiro cliente pago.

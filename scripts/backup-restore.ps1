@@ -2,10 +2,10 @@
 param(
   [ValidateSet('Backup', 'Restore')]
   [string]$Mode,
-  [string]$BackupDirectory = 'C:\Users\Daniele\Documents\FestaControl-Backups',
+  [string]$BackupDirectory = 'C:\Users\Daniele\Documents\FestaFlow-Backups',
   [string]$BackupSet,
   [string]$ProjectRef = 'ksbivaolyusmrcblnnfe',
-  [string]$LocalDatabase = 'FestaControl_restore',
+  [string]$LocalDatabase = 'festaflow_restore',
   [int]$LocalPort = 5433
 )
 
@@ -15,6 +15,10 @@ $OpenSsl = 'C:\Program Files\Git\usr\bin\openssl.exe'
 $SupabaseUrl = "https://$ProjectRef.supabase.co"
 $DbHost = if ($env:SUPABASE_DB_HOST) { $env:SUPABASE_DB_HOST } else { "db.$ProjectRef.supabase.co" }
 $DbUser = if ($env:SUPABASE_DB_USER) { $env:SUPABASE_DB_USER } else { 'postgres' }
+
+# Accept the old variable names so existing encrypted backup sets remain restorable.
+if (-not $env:FESTAFLOW_BACKUP_PASSPHRASE -and $env:FestaControl_BACKUP_PASSPHRASE) { $env:FESTAFLOW_BACKUP_PASSPHRASE = $env:FestaControl_BACKUP_PASSPHRASE }
+if (-not $env:FESTAFLOW_LOCAL_PG_PASSWORD -and $env:FestaControl_LOCAL_PG_PASSWORD) { $env:FESTAFLOW_LOCAL_PG_PASSWORD = $env:FestaControl_LOCAL_PG_PASSWORD }
 
 function Assert-Environment([string[]]$Names) {
   foreach ($name in $Names) {
@@ -117,16 +121,16 @@ function Export-Storage([string]$Destination) {
 }
 
 function Protect-File([string]$Source, [string]$Destination) {
-  Invoke-Checked $OpenSsl @('enc', '-aes-256-cbc', '-salt', '-pbkdf2', '-iter', '600000', '-in', $Source, '-out', $Destination, '-pass', 'env:FestaControl_BACKUP_PASSPHRASE')
+  Invoke-Checked $OpenSsl @('enc', '-aes-256-cbc', '-salt', '-pbkdf2', '-iter', '600000', '-in', $Source, '-out', $Destination, '-pass', 'env:FESTAFLOW_BACKUP_PASSPHRASE')
 }
 
 function Unprotect-File([string]$Source, [string]$Destination) {
-  Invoke-Checked $OpenSsl @('enc', '-d', '-aes-256-cbc', '-pbkdf2', '-iter', '600000', '-in', $Source, '-out', $Destination, '-pass', 'env:FestaControl_BACKUP_PASSPHRASE')
+  Invoke-Checked $OpenSsl @('enc', '-d', '-aes-256-cbc', '-pbkdf2', '-iter', '600000', '-in', $Source, '-out', $Destination, '-pass', 'env:FESTAFLOW_BACKUP_PASSPHRASE')
 }
 
 function New-Backup {
   $timer = [Diagnostics.Stopwatch]::StartNew()
-  Assert-Environment @('SUPABASE_DB_PASSWORD', 'SUPABASE_SERVICE_ROLE_KEY', 'FestaControl_BACKUP_PASSPHRASE')
+  Assert-Environment @('SUPABASE_DB_PASSWORD', 'SUPABASE_SERVICE_ROLE_KEY', 'FESTAFLOW_BACKUP_PASSPHRASE')
   New-Item -ItemType Directory -Path $BackupDirectory -Force | Out-Null
   $setDirectory = Join-Path $BackupDirectory (Get-Date -Format 'yyyyMMdd-HHmmss')
   $tempDirectory = Join-Path $env:TEMP "FestaControlBackup-$([guid]::NewGuid())"
@@ -172,7 +176,7 @@ function New-Backup {
 
 function Restore-Backup {
   $timer = [Diagnostics.Stopwatch]::StartNew()
-  Assert-Environment @('FestaControl_BACKUP_PASSPHRASE', 'FestaControl_LOCAL_PG_PASSWORD')
+  Assert-Environment @('FESTAFLOW_BACKUP_PASSPHRASE', 'FESTAFLOW_LOCAL_PG_PASSWORD')
   if (-not $BackupSet) {
     $script:BackupSet = (Get-ChildItem -LiteralPath $BackupDirectory -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName
   }
@@ -194,7 +198,7 @@ function Restore-Backup {
     Unprotect-File $encryptedStorage $storageZip
     Expand-Archive -LiteralPath $storageZip -DestinationPath $storage -Force
 
-    $env:PGPASSWORD = $env:FestaControl_LOCAL_PG_PASSWORD
+    $env:PGPASSWORD = $env:FESTAFLOW_LOCAL_PG_PASSWORD
     Invoke-Checked "$PostgresBin\dropdb.exe" @('--if-exists', '-h', 'localhost', '-p', "$LocalPort", '-U', 'postgres', $LocalDatabase)
     Invoke-Checked "$PostgresBin\createdb.exe" @('-h', 'localhost', '-p', "$LocalPort", '-U', 'postgres', $LocalDatabase)
     $rolesSql = "DO `$`$ DECLARE r text; BEGIN FOREACH r IN ARRAY ARRAY['anon','authenticated','service_role','authenticator','supabase_admin','supabase_auth_admin','supabase_storage_admin','dashboard_user'] LOOP IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname=r) THEN EXECUTE format('CREATE ROLE %I NOLOGIN',r); END IF; END LOOP; END `$`$;"
@@ -205,8 +209,8 @@ function Restore-Backup {
     & "$PostgresBin\pg_restore.exe" -l $dump | Where-Object { $_ -notmatch $extensionPattern } | Set-Content -LiteralPath $restoreList -Encoding utf8
     if ($LASTEXITCODE -ne 0) { throw 'Could not generate the restore catalog.' }
     Invoke-Checked "$PostgresBin\pg_restore.exe" @('--exit-on-error', '--no-owner', '--no-privileges', '-N', 'vault', '-L', $restoreList, '-h', 'localhost', '-p', "$LocalPort", '-U', 'postgres', '-d', $LocalDatabase, $dump)
-    $restoredCounts = Get-CoreCounts 'localhost' $LocalPort 'postgres' $LocalDatabase $env:FestaControl_LOCAL_PG_PASSWORD
-    $restoredSchemaFingerprint = Get-SchemaFingerprint 'localhost' $LocalPort 'postgres' $LocalDatabase $env:FestaControl_LOCAL_PG_PASSWORD
+    $restoredCounts = Get-CoreCounts 'localhost' $LocalPort 'postgres' $LocalDatabase $env:FESTAFLOW_LOCAL_PG_PASSWORD
+    $restoredSchemaFingerprint = Get-SchemaFingerprint 'localhost' $LocalPort 'postgres' $LocalDatabase $env:FESTAFLOW_LOCAL_PG_PASSWORD
 
     $storageVerified = $true
     foreach ($entry in $manifest.storage_hashes.PSObject.Properties) {

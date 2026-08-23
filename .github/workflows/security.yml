@@ -2,7 +2,7 @@ name: Security and verification
 
 on:
   push:
-    branches: ['security/**']
+    branches: ['main', 'security/**', 'feat/**']
   pull_request:
 
 permissions:
@@ -34,6 +34,13 @@ jobs:
       - run: npm audit --audit-level=high
       - run: npm run lint
       - run: npm test
+      - name: Type-check every Edge Function
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r file; do
+            deno check "$file"
+          done < <(find supabase/functions -mindepth 2 -maxdepth 2 -name index.ts -print | sort)
       - run: npm run build
 
   screenshots:
