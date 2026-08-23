@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 async function stabilize(page) {
+  await page.evaluate(() => document.fonts.ready);
   await page.addStyleTag({ content: '*, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }' });
 }
 
