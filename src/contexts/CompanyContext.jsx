@@ -1,8 +1,7 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { logError } from '../services/dbService';
-
-export const CompanyContext = createContext({});
+import { CompanyContext } from './company-context';
 
 const CACHE_KEY = 'FestaControl_company_settings';
 
@@ -27,9 +26,9 @@ export function CompanyProvider({ children }) {
     if (initialSettings?.primary_color) {
       document.documentElement.style.setProperty('--primary', initialSettings.primary_color);
     }
-  }, []);
+  }, [initialSettings?.primary_color]);
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       if (!settings) setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
@@ -98,7 +97,7 @@ export function CompanyProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [settings]);
 
   useEffect(() => {
     let initialized = false;
@@ -132,7 +131,7 @@ export function CompanyProvider({ children }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchSettings]);
 
   const updateSettings = async (updates) => {
     if (!settings?.company_id) return { error: 'Nenhuma empresa ativa' };

@@ -37,8 +37,8 @@ export default function Dashboard({ leads = [], inboxTasksCount = 0, onNovoOrcam
         activities.push({
           id: `create-${lead.id}`,
           date: new Date(lead.created_at),
-          title: `Orçamento #${String(lead.id).padStart(4, '0')} criado`,
-          subtitle: lead.nome,
+          title: 'Novo orçamento criado',
+          subtitle: `${lead.nome}${lead.tema ? ` · ${lead.tema}` : ''}`,
         });
       }
       

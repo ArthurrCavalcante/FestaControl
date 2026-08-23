@@ -1,0 +1,39 @@
+.container {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.whatsappRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.qrPanel {
+  display: grid;
+  justify-items: center;
+  gap: .75rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.qrPanel img { width: min(280px, 100%); aspect-ratio: 1; object-fit: contain; }
+.formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.colorRow { display: flex; gap: 1rem; align-items: center; }
+.actionRow { display: flex; justify-content: flex-end; margin-top: 1rem; }
+
+@media (max-width: 640px) {
+  .container { padding: 1rem; gap: 1.5rem; overflow-x: hidden; }
+  .whatsappRow { align-items: stretch; flex-direction: column; }
+  .whatsappRow button { width: 100%; }
+  .formGrid { grid-template-columns: 1fr; }
+  .colorRow { align-items: flex-start; flex-direction: column; }
+  .actionRow button { width: 100%; }
+}

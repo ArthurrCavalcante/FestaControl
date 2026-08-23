@@ -4,6 +4,7 @@ import Button from './ui/Button';
 import { useCompany } from '../hooks/useCompany';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../supabaseClient';
+import styles from './Configuracoes.module.css';
 
 export default function Configuracoes() {
   const { settings, updateSettings, loading } = useCompany();
@@ -15,6 +16,7 @@ export default function Configuracoes() {
     primary_color: '#8b5cf6',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [qrCode, setQrCode] = useState('');
 
   useEffect(() => {
     if (settings) {
@@ -31,7 +33,7 @@ export default function Configuracoes() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
-    const { success, error } = await updateSettings(formData);
+    const { success } = await updateSettings(formData);
     setIsSaving(false);
     
     if (success) {
@@ -47,13 +49,15 @@ export default function Configuracoes() {
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-session`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-session`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
+      if (!response.ok) throw new Error('Falha ao desconectar');
+      setQrCode('');
       await updateSettings({ whatsapp_status: 'disconnected' });
       toast.success('WhatsApp desconectado.');
-    } catch (e) {
+    } catch {
       toast.error('Erro ao desconectar.');
     }
   };
@@ -61,14 +65,14 @@ export default function Configuracoes() {
   if (loading) return <div style={{ padding: '2rem' }}>Carregando configurações...</div>;
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <div className={styles.container}>
       <div>
         <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Integração WhatsApp (Evolution API)</h2>
         <Card padding="lg">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className={styles.whatsappRow}>
             <div>
-              <h3 style={{ margin: 0 }}>Status: {settings?.whatsapp_status === 'connected' ? '🟢 Conectado' : (settings?.whatsapp_status === 'connecting' ? '🟡 Aguardando QR Code' : '🔴 Desconectado')}</h3>
-              <p style={{ color: 'var(--text-secondary)', margin: '0.5rem 0 0' }}>Conecte seu aparelho para receber e enviar mensagens pelo CRM.</p>
+              <h3 style={{ margin: 0 }}>Status: {settings?.whatsapp_status === 'connected' ? 'Conectado' : (settings?.whatsapp_status === 'connecting' ? 'Aguardando leitura do QR Code' : 'Desconectado')}</h3>
+              <p style={{ color: 'var(--text-secondary)', margin: '0.5rem 0 0' }}>Integração Evolution beta. Em caso de indisponibilidade, use o atalho do WhatsApp.</p>
             </div>
             
             {settings?.whatsapp_status === 'connected' ? (
@@ -82,14 +86,12 @@ export default function Configuracoes() {
                      headers: { 'Authorization': `Bearer ${session.access_token}` }
                    });
                    const json = await res.json();
+                   if (!res.ok) throw new Error(json.error || 'Falha ao conectar');
                    if (json.base64) {
-                      // Para facilitar o protótipo, podemos abrir o QR Code numa nova aba ou modal simples
-                      const image = new Image();
-                      image.src = json.base64;
-                      const w = window.open("");
-                      w.document.write(image.outerHTML);
+                      setQrCode(json.base64);
+                      await updateSettings({ whatsapp_status: 'connecting' });
                    }
-                 } catch (e) {
+                 } catch {
                    toast.error('Erro ao conectar.');
                  }
                }}>
@@ -97,6 +99,7 @@ export default function Configuracoes() {
                </Button>
             )}
           </div>
+          {qrCode ? <div className={styles.qrPanel}><img src={qrCode} alt="QR Code para conectar o WhatsApp" /><p>Leia o código no WhatsApp. Ele expira em aproximadamente um minuto.</p></div> : null}
         </Card>
       </div>
 
@@ -109,7 +112,7 @@ export default function Configuracoes() {
         <Card padding="lg">
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className={styles.formGrid}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Telefone Fixo / Celular Auxiliar</label>
                 <input 
@@ -157,7 +160,7 @@ export default function Configuracoes() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Cor Principal da Marca</label>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div className={styles.colorRow}>
                 <input 
                   type="color" 
                   value={formData.primary_color}
@@ -168,7 +171,7 @@ export default function Configuracoes() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+            <div className={styles.actionRow}>
               <Button type="submit" isLoading={isSaving} size="lg">
                 Salvar Configurações
               </Button>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Login from './components/Login';
 import ConfirmEventModal from './components/ConfirmEventModal';
 import { supabase } from './supabaseClient';
@@ -9,11 +10,10 @@ import Spinner from './components/ui/Spinner';
 import ImportarClientesModal from './components/ImportarClientesModal';
 import ErrorState from './components/ui/ErrorState';
 import Button from './components/ui/Button';
-import IconButton from './components/ui/IconButton';
 import Configuracoes from './components/Configuracoes';
 import Perfil from './components/Perfil';
 import Dashboard from './components/Dashboard';
-import { Calendar, MessageSquare, BarChart3, Settings, Bell, Search, Plus, ListTodo, ClipboardList, Package, User, LogOut, Users, LayoutDashboard, Camera, Menu, ChevronLeft, Zap, Inbox, AlertTriangle, XCircle } from 'lucide-react';
+import { Calendar, BarChart3, Settings, Bell, Plus, ClipboardList, Package, User, LogOut, Users, LayoutDashboard, Camera, Menu, ChevronLeft, Inbox, AlertTriangle, XCircle, FileText, UserRoundCog, ShieldCheck } from 'lucide-react';
 
 import { useCompany } from './hooks/useCompany';
 import Onboarding from './components/Onboarding';
@@ -28,6 +28,9 @@ const BaseClientes = lazy(() => import('./components/BaseClientes'));
 const Agenda = lazy(() => import('./components/Agenda'));
 const OperacaoEventos = lazy(() => import('./components/OperacaoEventos'));
 const MobileHub = lazy(() => import('./components/MobileHub'));
+const Propostas = lazy(() => import('./components/Propostas'));
+const TeamSubscription = lazy(() => import('./components/TeamSubscription'));
+const PilotAdmin = lazy(() => import('./components/PilotAdmin'));
 
 const pageTitles = {
   dashboard: 'Visão geral',
@@ -40,9 +43,14 @@ const pageTitles = {
   catalogo: 'Galeria de temas',
   configuracoes: 'Configurações',
   perfil: 'Perfil',
+  propostas: 'Propostas',
+  equipe: 'Equipe e assinatura',
+  admin: 'Piloto',
 };
 
-export default function App() {
+export default function App({ initialTab }) {
+  const location = useLocation();
+  const routerNavigate = useNavigate();
   const [session, setSession] = useState(undefined); // undefined = loading auth
   const { settings, needsOnboarding, refreshCompany, loading: companyLoading } = useCompany();
   const [acervo, setAcervo] = useState([]);
@@ -50,24 +58,32 @@ export default function App() {
   const [newPassword, setNewPassword] = useState('');
   const [isResetting, setIsResetting] = useState(false);
   const [eventPrompt, setEventPrompt] = useState(null);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const routeTab = location.pathname.startsWith('/app/') ? location.pathname.split('/')[2] : null;
+  const [activeTab, setActiveTab] = useState(initialTab || routeTab || 'dashboard');
   const [showGerador, setShowGerador] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [prefilledLeadForGerador, setPrefilledLeadForGerador] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
   const [leads, setLeads] = useState([]);
   const [clientes, setClientes] = useState([]);
-  const [isFetchingDeals, setIsFetchingDeals] = useState(false);
+  const [isFetchingDeals] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
+  const [subscriptionState, setSubscriptionState] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   const navigateTo = (tab) => {
     setActiveTab(tab);
     setMobileMenuOpen(false);
+    routerNavigate(`/app/${tab}`);
   };
+
+  useEffect(() => {
+    if (initialTab) setActiveTab(initialTab);
+    else if (routeTab && pageTitles[routeTab]) setActiveTab(routeTab);
+  }, [initialTab, routeTab]);
 
   const requestEventData = (defaultData, defaultHora) => {
     return new Promise((resolve) => {
@@ -84,6 +100,11 @@ export default function App() {
       .select('*', { count: 'exact', head: true })
       .eq('status', 'PENDING');
     if (count !== null) setInboxTasksCount(count);
+  };
+
+  const fetchSubscription = async () => {
+    const { data } = await supabase.from('company_subscriptions').select('*').maybeSingle();
+    setSubscriptionState(data || null);
   };
 
   const fetchDeals = async () => {
@@ -181,11 +202,16 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (session && location.pathname === '/entrar') routerNavigate('/app/dashboard', { replace: true });
+  }, [session, location.pathname, routerNavigate]);
+
+  useEffect(() => {
     if (session) {
       fetchDeals();
       fetchClientes();
       fetchAcervo();
       fetchInboxTasks();
+      fetchSubscription();
     }
   }, [session]);
 
@@ -220,6 +246,20 @@ export default function App() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+  };
+
+  const exportTenantData = async () => {
+    const tables = ['leads', 'deals', 'events', 'acervo', 'proposals', 'proposal_items', 'event_costs', 'pagamentos', 'event_tasks'];
+    const results = await Promise.all(tables.map(async (table) => {
+      const { data, error } = await supabase.from(table).select('*');
+      return [table, error ? { error: error.message } : data];
+    }));
+    const blob = new Blob([JSON.stringify(Object.fromEntries(results), null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `festacontrol-export-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
   };
 
   const handleAddLead = () => {
@@ -389,6 +429,11 @@ export default function App() {
   }, []);
 
   const isLoading = session === undefined || companyLoading;
+  const readOnly = subscriptionState && !(
+    subscriptionState.status === 'active' ||
+    (subscriptionState.status === 'trialing' && new Date(subscriptionState.trial_ends_at).getTime() > Date.now()) ||
+    (subscriptionState.status === 'past_due' && new Date(subscriptionState.grace_ends_at).getTime() > Date.now())
+  );
 
   useEffect(() => {
     if (!isLoading) {
@@ -542,6 +587,9 @@ export default function App() {
           onNovoOrcamento={() => setShowGerador(true)}
         />;
       if (activeTab === 'operacao') return <OperacaoEventos />;
+      if (activeTab === 'propostas') return <Propostas />;
+      if (activeTab === 'equipe') return <TeamSubscription />;
+      if (activeTab === 'admin') return <PilotAdmin />;
       if (activeTab === 'configuracoes') return <Configuracoes />;
       if (activeTab === 'perfil') return <Perfil />;
       return null;
@@ -652,7 +700,7 @@ export default function App() {
           <h2 className={styles.brandText}>{settings?.companies?.nome || 'FestaControl'}</h2>
         </button>
         
-        <div className={styles.newActionContainer}>
+        {!readOnly ? <div className={styles.newActionContainer}>
           <Button 
             icon={Plus} 
             size="lg" 
@@ -661,7 +709,7 @@ export default function App() {
           >
             <span className={styles.navLabel}>Novo Orçamento</span>
           </Button>
-        </div>
+        </div> : null}
 
         <nav className={styles.nav}>
             <button
@@ -721,6 +769,25 @@ export default function App() {
             >
               <Camera size={20} /> <span className={styles.navLabel}>Galeria de Temas</span>
             </button>
+            <button
+              className={`${styles.navItem} ${activeTab === 'propostas' ? styles.active : ''}`}
+              onClick={() => navigateTo('propostas')}
+              title="Propostas"
+            >
+              <FileText size={20} /> <span className={styles.navLabel}>Propostas</span>
+            </button>
+            <button
+              className={`${styles.navItem} ${activeTab === 'equipe' ? styles.active : ''}`}
+              onClick={() => navigateTo('equipe')}
+              title="Equipe e assinatura"
+            >
+              <UserRoundCog size={20} /> <span className={styles.navLabel}>Equipe e assinatura</span>
+            </button>
+            {initialTab === 'admin' ? (
+              <button className={`${styles.navItem} ${activeTab === 'admin' ? styles.active : ''}`} onClick={() => setActiveTab('admin')} title="Painel do piloto">
+                <ShieldCheck size={20} /> <span className={styles.navLabel}>Painel do piloto</span>
+              </button>
+            ) : null}
         </nav>
         
 
@@ -769,6 +836,9 @@ export default function App() {
                activeTab === 'inbox' ? 'Avisos' :
                activeTab === 'acervo' ? 'Acervo' :
                activeTab === 'catalogo' ? 'Galeria' :
+               activeTab === 'propostas' ? 'Propostas' :
+               activeTab === 'equipe' ? 'Equipe e assinatura' :
+               activeTab === 'admin' ? 'Piloto' :
                activeTab === 'configuracoes' ? 'Configurar' :
                activeTab === 'perfil' ? 'Perfil' :
                'FestaControl'}
@@ -816,6 +886,7 @@ export default function App() {
           </div>
         </header>
         <div className={styles.pageContent}>
+          {readOnly ? <div role="alert" style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', padding: '0.9rem 1rem', marginBottom: '1rem', borderLeft: '4px solid #d8992b', background: '#fff7e6', color: '#482f08' }}><span><strong>Conta em modo somente leitura.</strong> Regularize a assinatura ou exporte seus dados.</span><Button variant="secondary" onClick={exportTenantData}>Exportar dados</Button></div> : null}
           {renderContent()}
         </div>
       </main>
@@ -831,11 +902,11 @@ export default function App() {
           Pipeline
         </button>
         
-        <div className={styles.fabWrapper}>
-          <button className={styles.fab} onClick={() => setShowGerador(true)}>
+        {!readOnly ? <div className={styles.fabWrapper}>
+          <button className={styles.fab} onClick={() => setShowGerador(true)} aria-label="Criar novo orçamento" title="Criar novo orçamento">
             <Plus size={28} />
           </button>
-        </div>
+        </div> : <div className={styles.fabWrapper} aria-hidden="true" />}
 
         <button className={`${styles.bottomNavItem} ${activeTab === 'inbox' ? styles.active : ''}`} onClick={() => navigateTo('inbox')}>
           <div className={styles.bottomNavIconWrapper}>

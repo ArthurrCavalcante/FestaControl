@@ -6,7 +6,6 @@ import { toast } from 'react-hot-toast';
 
 export default function Perfil() {
   const [session, setSession] = useState(null);
-  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({ nome: '', telefone: '' });
@@ -31,7 +30,6 @@ export default function Perfil() {
         if (error && error.code !== 'PGRST116') throw error;
         
         if (data) {
-          setProfile(data);
           setFormData({ nome: data.nome || '', telefone: data.telefone || '' });
         }
       }
@@ -81,7 +79,7 @@ export default function Perfil() {
       if (error) throw error;
       toast.success('Senha alterada com sucesso!');
       setPasswordForm({ newPassword: '' });
-    } catch (error) {
+    } catch {
       toast.error('Erro ao alterar senha.');
     }
   };

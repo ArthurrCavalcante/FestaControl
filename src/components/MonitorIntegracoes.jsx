@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Card from './ui/Card';
 import Button from './ui/Button';
 import { supabase } from '../supabaseClient';
-import { CheckCircle, AlertTriangle, Send, Inbox, RefreshCw, Trash2, Smartphone } from 'lucide-react';
+import { CheckCircle, Send, Inbox, RefreshCw, Trash2, Smartphone } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export default function MonitorIntegracoes({ connection, onReconnect, onRemove }) {

@@ -20,7 +20,6 @@ import {
   CheckCircle2, 
   AlertTriangle, 
   MapPin, 
-  CircleDollarSign,
   Lock,
   Flag,
   Plus

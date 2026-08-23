@@ -7,11 +7,10 @@ import Button from './ui/Button';
 import Badge from './ui/Badge';
 import EmptyState from './ui/EmptyState';
 import Spinner from './ui/Spinner';
-import Skeleton from './ui/Skeleton';
 import ErrorState from './ui/ErrorState';
 import ConfirmDialog from './ui/ConfirmDialog';
 import { toast } from 'react-hot-toast';
-import { deleteFotoCatalogo, deleteMultipleFotosCatalogo, logActivity } from '../services/dbService';
+import { deleteFotoCatalogo, deleteMultipleFotosCatalogo } from '../services/dbService';
 import { 
   Image as ImageIcon, 
   CheckSquare, 

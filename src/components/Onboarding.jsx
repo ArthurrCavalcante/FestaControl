@@ -8,6 +8,8 @@ import { toast } from 'react-hot-toast';
 export default function Onboarding({ onComplete }) {
   const [userName, setUserName] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [pixKey, setPixKey] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -30,6 +32,19 @@ export default function Onboarding({ onComplete }) {
         throw error;
       }
 
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase.from('profiles').select('company_id').eq('user_id', user.id).single();
+      if (profile?.company_id) {
+        await supabase.from('company_settings').update({ telefone: phone.trim() || null, pix_key: pixKey.trim() || null })
+          .eq('company_id', profile.company_id);
+        await supabase.from('product_events').insert({
+          company_id: profile.company_id,
+          user_id: user.id,
+          event_name: 'onboarding_completed',
+          properties: { has_phone: Boolean(phone.trim()), has_pix: Boolean(pixKey.trim()) },
+        });
+      }
+
       toast.success('Conta configurada com sucesso!');
       if (onComplete) {
         onComplete();
@@ -50,7 +65,7 @@ export default function Onboarding({ onComplete }) {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)', padding: '1rem' }}>
-      <Card style={{ width: '100%', maxWidth: '400px', padding: '2rem' }}>
+      <Card style={{ width: '100%', maxWidth: '520px', padding: '2rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ background: 'var(--primary-light)', color: 'var(--primary)', width: 64, height: 64, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
             <Package size={32} />
@@ -78,6 +93,17 @@ export default function Onboarding({ onComplete }) {
                 style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.5rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '1rem', color: 'var(--text-primary)' }}
                 required
               />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>WhatsApp da empresa</label>
+              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-9999" disabled={isSubmitting} style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '1rem', color: 'var(--text-primary)' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Chave PIX para propostas</label>
+              <input value={pixKey} onChange={(e) => setPixKey(e.target.value)} placeholder="CNPJ, e-mail ou telefone" disabled={isSubmitting} style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '1rem', color: 'var(--text-primary)' }} />
             </div>
           </div>
 

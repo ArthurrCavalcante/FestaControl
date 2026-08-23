@@ -7,12 +7,13 @@ import Card from './ui/Card';
 import Button from './ui/Button';
 import { toast } from 'react-hot-toast';
 
-export default function Login() {
+export default function Login({ allowSignup = false }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const [isSignupMode, setIsSignupMode] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -46,13 +47,27 @@ export default function Login() {
     setLoading(false);
   };
 
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    const { error: signupError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: window.location.href },
+    });
+    if (signupError) setError(signupError.message);
+    else toast.success('Conta criada. Confirme seu e-mail para aceitar o convite.');
+    setLoading(false);
+  };
+
   return (
     <div className={styles.container}>
       <Card padding="lg" className={styles.cardOverrides}>
         <div className={styles.logoContainer}>
           <h2 className={styles.title}>FestaControl CRM</h2>
           <p className={styles.subtitle}>
-            {isRecoveryMode ? 'Recuperação de Senha' : 'Acesse seu painel administrativo'}
+            {isRecoveryMode ? 'Recuperação de Senha' : isSignupMode ? 'Criar conta para o convite' : 'Acesse seu painel administrativo'}
           </p>
         </div>
         
@@ -63,7 +78,7 @@ export default function Login() {
           </div>
         )}
 
-        <form onSubmit={isRecoveryMode ? handleRecovery : handleLogin} className={styles.form}>
+        <form onSubmit={isRecoveryMode ? handleRecovery : isSignupMode ? handleSignup : handleLogin} className={styles.form}>
           <div className={styles.inputGroup}>
             <label className={styles.label}>E-mail</label>
             <div className={styles.inputWrapper}>
@@ -103,10 +118,10 @@ export default function Login() {
               isLoading={loading} 
               className={styles.submitBtnOverrides}
             >
-              {isRecoveryMode ? 'Enviar Link de Recuperação' : 'Entrar na Conta'}
+              {isRecoveryMode ? 'Enviar Link de Recuperação' : isSignupMode ? 'Criar conta' : 'Entrar na Conta'}
             </Button>
 
-            {!isRecoveryMode && (
+            {!isRecoveryMode && !isSignupMode && (
               <Button 
                 type="button" 
                 size="lg" 
@@ -136,14 +151,10 @@ export default function Login() {
               Voltar para o Login
             </button>
           ) : (
-            <button 
-              type="button" 
-              className={styles.textButton} 
-              onClick={() => { setIsRecoveryMode(true); setError(null); }}
-              style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
-            >
-              Esqueci minha senha
-            </button>
+            <>
+              <button type="button" className={styles.textButton} onClick={() => { setIsRecoveryMode(true); setError(null); }} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>Esqueci minha senha</button>
+              {allowSignup ? <button type="button" className={styles.textButton} onClick={() => { setIsSignupMode((value) => !value); setError(null); }} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', marginLeft: 12 }}>{isSignupMode ? 'Já tenho conta' : 'Criar conta'}</button> : null}
+            </>
           )}
         </p>
       </Card>

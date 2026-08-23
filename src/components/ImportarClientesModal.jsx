@@ -3,7 +3,7 @@ import Modal from './ui/Modal';
 import Button from './ui/Button';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../supabaseClient';
-import { FileText, Copy, UploadCloud, Users, AlertCircle } from 'lucide-react';
+import { Copy, UploadCloud, Users, AlertCircle } from 'lucide-react';
 
 export default function ImportarClientesModal({ onClose, onSuccess }) {
   const [activeTab, setActiveTab] = useState('paste'); // 'paste' ou 'upload'
@@ -74,6 +74,11 @@ export default function ImportarClientesModal({ onClose, onSuccess }) {
       .from('leads')
       .select('telefone')
       .in('telefone', phones);
+    if (error) {
+      setIsProcessing(false);
+      toast.error('Não foi possível verificar clientes já cadastrados.');
+      return;
+    }
 
     const existingPhones = new Set((existingLeads || []).map(l => l.telefone));
     

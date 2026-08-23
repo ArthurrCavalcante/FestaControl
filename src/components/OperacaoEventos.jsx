@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { AlertTriangle, CheckSquare, ClipboardList, Package, Plus, UserRound, WalletCards } from 'lucide-react';
+import { AlertTriangle, CheckSquare, ClipboardList, Package, Plus, TriangleAlert, UserRound, WalletCards } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import Button from './ui/Button';
 import Modal from './ui/Modal';
+import operationStyles from './OperacaoEventos.module.css';
 
 const panel = { background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem' };
 const field = { width: '100%', padding: '0.65rem', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'var(--bg-color)', color: 'var(--text-color)' };
@@ -15,6 +16,8 @@ export default function OperacaoEventos() {
   const [reservas, setReservas] = useState([]);
   const [pagamentos, setPagamentos] = useState([]);
   const [tarefas, setTarefas] = useState([]);
+  const [custos, setCustos] = useState([]);
+  const [incidentes, setIncidentes] = useState([]);
   const [acervo, setAcervo] = useState([]);
   const [disponibilidade, setDisponibilidade] = useState({});
   const [loading, setLoading] = useState(true);
@@ -27,27 +30,31 @@ export default function OperacaoEventos() {
     setLoading(true);
     const { data, error } = await supabase
       .from('events')
-      .select('id, deal_id, data_evento, horario, endereco, status_operacional, deals(id, tema, valor_total, leads(nome))')
+      .select('id, company_id, deal_id, data_evento, horario, endereco, status_operacional, deals(id, tema, valor_total, leads(nome))')
       .is('deleted_at', null)
       .order('data_evento', { ascending: true });
     if (error) toast.error('Não foi possível carregar os eventos.');
     else {
       setEvents(data || []);
-      if (data?.[0]) setSelectedId((current) => current || data[0].id);
+      const today = new Date().toISOString().slice(0, 10);
+      const nextEvent = data?.find((event) => event.data_evento >= today) || data?.[0];
+      if (nextEvent) setSelectedId((current) => current || nextEvent.id);
     }
     setLoading(false);
   }, []);
 
   const loadDetails = useCallback(async (event) => {
     if (!event) return;
-    const [reservasResult, pagamentosResult, tarefasResult, acervoResult, disponibilidadeResult] = await Promise.all([
+    const [reservasResult, pagamentosResult, tarefasResult, acervoResult, disponibilidadeResult, custosResult, incidentesResult] = await Promise.all([
       supabase.from('acervo_reservas').select('id, quantidade, data_inicio, data_fim, status, observacoes, acervo(nome, categoria)').eq('event_id', event.id).order('created_at'),
       supabase.from('pagamentos').select('*').eq('event_id', event.id).order('vencimento'),
       supabase.from('event_tasks').select('*').eq('event_id', event.id).order('prazo'),
       supabase.from('acervo').select('id, nome, categoria, quantidade_total').eq('ativo', true).is('deleted_at', null).order('nome'),
       supabase.rpc('get_acervo_disponibilidade', { p_data: event.data_evento }),
+      supabase.from('event_costs').select('*').eq('event_id', event.id).order('created_at'),
+      supabase.from('inventory_incidents').select('*, inventory_movements(quantity)').eq('event_id', event.id).order('created_at', { ascending: false }),
     ]);
-    if (reservasResult.error || pagamentosResult.error || tarefasResult.error || acervoResult.error || disponibilidadeResult.error) {
+    if (reservasResult.error || pagamentosResult.error || tarefasResult.error || acervoResult.error || disponibilidadeResult.error || custosResult.error || incidentesResult.error) {
       toast.error('Não foi possível carregar todos os dados operacionais.');
       return;
     }
@@ -56,6 +63,8 @@ export default function OperacaoEventos() {
     setTarefas(tarefasResult.data || []);
     setAcervo(acervoResult.data || []);
     setDisponibilidade(Object.fromEntries((disponibilidadeResult.data || []).map((item) => [item.acervo_id, item])));
+    setCustos(custosResult.data || []);
+    setIncidentes(incidentesResult.data || []);
   }, []);
 
   useEffect(() => { loadEvents(); }, [loadEvents]);
@@ -65,6 +74,10 @@ export default function OperacaoEventos() {
     total: pagamentos.reduce((sum, item) => sum + Number(item.valor), 0),
     paid: pagamentos.filter((item) => item.status === 'PAGO').reduce((sum, item) => sum + Number(item.valor), 0),
   }), [pagamentos]);
+  const costTotals = useMemo(() => ({
+    estimated: custos.reduce((sum, item) => sum + Number(item.estimated_amount || 0), 0),
+    actual: custos.reduce((sum, item) => sum + Number(item.actual_amount ?? item.estimated_amount ?? 0), 0),
+  }), [custos]);
 
   const refresh = async () => {
     await loadEvents();
@@ -124,6 +137,73 @@ export default function OperacaoEventos() {
     await refresh();
   };
 
+  const saveCusto = async (form) => {
+    setSaving(true);
+    const { error } = await supabase.from('event_costs').insert({
+      event_id: selectedEvent.id,
+      category: form.category,
+      description: form.description,
+      estimated_amount: Number(form.estimated_amount || 0),
+      actual_amount: form.actual_amount === '' ? null : Number(form.actual_amount),
+    });
+    setSaving(false);
+    if (error) return toast.error('Não foi possível registrar a despesa.');
+    toast.success('Despesa registrada.');
+    setModal(null);
+    await refresh();
+  };
+
+  const updateReservationStatus = async (reservation, status) => {
+    const { error } = await supabase.from('acervo_reservas').update({ status }).eq('id', reservation.id);
+    if (error) return toast.error('Não foi possível atualizar o item.');
+    const movementType = status === 'ENTREGUE' ? 'outbound' : status === 'DEVOLVIDO' ? 'returned' : status === 'MANUTENCAO' ? 'damaged' : null;
+    if (movementType) {
+      await supabase.from('inventory_movements').insert({
+        event_id: selectedEvent.id, reservation_id: reservation.id, movement_type: movementType, quantity: reservation.quantidade,
+      });
+    }
+    await refresh();
+  };
+
+  const saveIncident = async (form) => {
+    setSaving(true);
+    try {
+      const movementType = form.incident_type === 'loss' ? 'lost' : 'damaged';
+      const { data: movement, error: movementError } = await supabase.from('inventory_movements').insert({
+        event_id: selectedEvent.id,
+        reservation_id: form.reservation_id || null,
+        movement_type: movementType,
+        quantity: Number(form.quantity),
+        notes: form.description,
+      }).select('id').single();
+      if (movementError) throw movementError;
+
+      let photoPath = null;
+      if (form.photo) {
+        const safeName = form.photo.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        photoPath = `companies/${selectedEvent.company_id}/deals/${selectedEvent.deal_id}/incidents/${crypto.randomUUID()}-${safeName}`;
+        const { error: uploadError } = await supabase.storage.from('crm').upload(photoPath, form.photo, { upsert: false });
+        if (uploadError) throw uploadError;
+      }
+      const { error: incidentError } = await supabase.from('inventory_incidents').insert({
+        event_id: selectedEvent.id,
+        movement_id: movement.id,
+        incident_type: form.incident_type,
+        description: form.description,
+        charge_amount: Number(form.charge_amount || 0),
+        photo_path: photoPath,
+      });
+      if (incidentError) throw incidentError;
+      toast.success(form.incident_type === 'loss' ? 'Item perdido registrado.' : 'Avaria registrada.');
+      setModal(null);
+      await refresh();
+    } catch {
+      toast.error('Não foi possível registrar a ocorrência.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const update = async (table, id, values) => {
     const { error } = await supabase.from(table).update(values).eq('id', id);
     if (error) toast.error('Não foi possível salvar a alteração.');
@@ -149,16 +229,26 @@ export default function OperacaoEventos() {
       </header>
 
       {!selectedEvent ? <div style={panel}>Confirme um orçamento para começar a organizar sua operação.</div> : <>
-        <div style={{ ...panel, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem' }}>
-          <div><small>Cliente</small><strong style={{ display: 'block' }}>{selectedEvent.deals?.leads?.nome || 'Não informado'}</strong></div>
-          <div><small>Data e horário</small><strong style={{ display: 'block' }}>{new Date(`${selectedEvent.data_evento}T12:00:00`).toLocaleDateString('pt-BR')} · {selectedEvent.horario}</strong></div>
-          <div><small>Valor do evento</small><strong style={{ display: 'block' }}>{money(selectedEvent.deals?.valor_total)}</strong></div>
-          <div><small>Recebido</small><strong style={{ display: 'block', color: 'var(--success)' }}>{money(paymentTotals.paid)}</strong></div>
+        <div className={operationStyles.summaryGrid} style={panel}>
+          <div className={operationStyles.summaryItem}><span>Cliente</span><strong>{selectedEvent.deals?.leads?.nome || 'Não informado'}</strong></div>
+          <div className={operationStyles.summaryItem}><span>Data e horário</span><strong>{new Date(`${selectedEvent.data_evento}T12:00:00`).toLocaleDateString('pt-BR')} · {selectedEvent.horario}</strong></div>
+          <div className={operationStyles.summaryItem}><span>Valor do evento</span><strong>{money(selectedEvent.deals?.valor_total)}</strong></div>
+          <div className={operationStyles.summaryItem}><span>Recebido</span><strong style={{ color: 'var(--success)' }}>{money(paymentTotals.paid)}</strong></div>
+          <div className={operationStyles.summaryItem}><span>Custo real</span><strong>{money(costTotals.actual)}</strong></div>
+          <div className={operationStyles.summaryItem}><span>Margem</span><strong style={{ color: Number(selectedEvent.deals?.valor_total || 0) - costTotals.actual >= 0 ? 'var(--success)' : 'var(--danger)' }}>{money(Number(selectedEvent.deals?.valor_total || 0) - costTotals.actual)} · {Number(selectedEvent.deals?.valor_total || 0) > 0 ? `${Math.round(((Number(selectedEvent.deals?.valor_total || 0) - costTotals.actual) / Number(selectedEvent.deals?.valor_total || 0)) * 100)}%` : '0%'}</strong></div>
         </div>
 
         <section style={{ ...panel, display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}><h3 style={{ margin: 0, display: 'flex', gap: '0.4rem', alignItems: 'center' }}><Package size={19} /> Acervo reservado</h3><Button size="sm" icon={Plus} onClick={() => setModal('reserva')}>Reservar item</Button></div>
-          {reservas.length === 0 ? <span style={{ color: 'var(--text-secondary)' }}>Nenhum item reservado ainda.</span> : reservas.map((item) => <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.7rem' }}><span><strong>{item.acervo?.nome}</strong> · {item.quantidade} un. <small>({item.data_inicio} a {item.data_fim})</small></span><select value={item.status} onChange={(event) => update('acervo_reservas', item.id, { status: event.target.value })} style={{ ...field, width: '145px', padding: '0.3rem' }}><option value="RESERVADO">Reservado</option><option value="SEPARADO">Separado</option><option value="ENTREGUE">Entregue</option><option value="DEVOLVIDO">Devolvido</option><option value="MANUTENCAO">Manutenção</option><option value="CANCELADO">Cancelado</option></select></div>)}
+          {reservas.length === 0 ? <span style={{ color: 'var(--text-secondary)' }}>Nenhum item reservado ainda.</span> : reservas.map((item) => <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.7rem' }}><span><strong>{item.acervo?.nome}</strong> · {item.quantidade} un. <small>({item.data_inicio} a {item.data_fim})</small></span><select value={item.status} onChange={(event) => updateReservationStatus(item, event.target.value)} style={{ ...field, width: '145px', padding: '0.3rem' }}><option value="RESERVADO">Reservado</option><option value="SEPARADO">Separado</option><option value="ENTREGUE">Entregue</option><option value="DEVOLVIDO">Devolvido</option><option value="MANUTENCAO">Manutenção</option><option value="CANCELADO">Cancelado</option></select></div>)}
+        </section>
+
+        <section style={panel}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}><h3 style={{ margin: 0, display: 'flex', gap: '0.4rem', alignItems: 'center' }}><WalletCards size={19} /> Custos e margem</h3><div style={{ display: 'flex', gap: '.5rem' }}><Button size="sm" icon={Plus} onClick={() => setModal('custo')}>Despesa</Button><Button size="sm" variant="secondary" icon={TriangleAlert} onClick={() => setModal('incidente')}>Avaria ou perda</Button></div></div>
+          <p style={{ color: 'var(--text-secondary)' }}>Estimado: {money(costTotals.estimated)} · Real: {money(costTotals.actual)}</p>
+          {custos.map((item) => <div key={item.id} style={{ borderTop: '1px solid var(--border-color)', padding: '0.7rem 0', display: 'grid', gridTemplateColumns: '1fr auto', gap: '1rem' }}><span><strong>{item.description}</strong><small style={{ display: 'block' }}>{item.category} · estimado {money(item.estimated_amount)}</small></span><label style={{ fontSize: '.75rem' }}>Real<input type="number" min="0" step="0.01" defaultValue={item.actual_amount ?? ''} onBlur={(event) => update('event_costs', item.id, { actual_amount: event.target.value === '' ? null : Number(event.target.value) })} style={{ ...field, width: 120, padding: '.35rem' }} /></label></div>)}
+          {incidentes.map((item) => <div key={item.id} style={{ borderTop: '1px solid var(--border-color)', padding: '0.7rem 0' }}><strong>{item.incident_type === 'loss' ? 'Perda' : 'Avaria'}:</strong> {item.description} · cobrança {money(item.charge_amount)}{item.photo_path ? ' · foto privada anexada' : ''}</div>)}
+          {!custos.length && !incidentes.length ? <span style={{ color: 'var(--text-secondary)' }}>Nenhuma despesa ou ocorrência registrada.</span> : null}
         </section>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
@@ -180,6 +270,8 @@ export default function OperacaoEventos() {
       {modal === 'reserva' && <ReservaModal acervo={acervo} disponibilidade={disponibilidade} event={selectedEvent} saving={saving} onClose={() => setModal(null)} onSave={saveReserva} />}
       {modal === 'pagamento' && <PagamentoModal saving={saving} onClose={() => setModal(null)} onSave={savePagamento} />}
       {modal === 'tarefa' && <TarefaModal event={selectedEvent} saving={saving} onClose={() => setModal(null)} onSave={saveTarefa} />}
+      {modal === 'custo' && <CustoModal saving={saving} onClose={() => setModal(null)} onSave={saveCusto} />}
+      {modal === 'incidente' && <IncidenteModal reservas={reservas} saving={saving} onClose={() => setModal(null)} onSave={saveIncident} />}
     </div>
   );
 }
@@ -198,4 +290,14 @@ function PagamentoModal({ saving, onClose, onSave }) {
 function TarefaModal({ event, saving, onClose, onSave }) {
   const [form, setForm] = useState({ titulo: '', etapa: 'SEPARACAO', responsavel: '', prazo: event.data_evento, observacoes: '' });
   return <Modal title="Adicionar tarefa operacional" icon={UserRound} onClose={onClose}><form onSubmit={(event) => { event.preventDefault(); onSave(form); }} style={{ display: 'grid', gap: '0.8rem' }}><label>Tarefa<input required style={field} value={form.titulo} onChange={(event) => setForm({ ...form, titulo: event.target.value })} placeholder="Ex: Separar painel e cilindros" /></label><label>Etapa<select style={field} value={form.etapa} onChange={(event) => setForm({ ...form, etapa: event.target.value })}><option value="SEPARACAO">Separação</option><option value="ENTREGA">Entrega</option><option value="MONTAGEM">Montagem</option><option value="DESMONTAGEM">Desmontagem</option><option value="RETIRADA">Retirada</option><option value="FINANCEIRO">Financeiro</option></select></label><label>Responsável<input style={field} value={form.responsavel} onChange={(event) => setForm({ ...form, responsavel: event.target.value })} /></label><label>Prazo<input type="date" style={field} value={form.prazo} onChange={(event) => setForm({ ...form, prazo: event.target.value })} /></label><Button type="submit" loading={saving}>Adicionar tarefa</Button></form></Modal>;
+}
+
+function CustoModal({ saving, onClose, onSave }) {
+  const [form, setForm] = useState({ category: 'material', description: '', estimated_amount: '', actual_amount: '' });
+  return <Modal title="Registrar despesa" icon={WalletCards} onClose={onClose}><form onSubmit={(event) => { event.preventDefault(); onSave(form); }} style={{ display: 'grid', gap: '0.8rem' }}><label>Categoria<select style={field} value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option value="material">Material</option><option value="transport">Transporte</option><option value="staff">Equipe</option><option value="supplier">Terceiros</option><option value="loss">Perdas</option><option value="other">Outros</option></select></label><label>Descrição<input required style={field} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label><label>Estimativa<input required min="0" step="0.01" type="number" style={field} value={form.estimated_amount} onChange={(event) => setForm({ ...form, estimated_amount: event.target.value })} /></label><label>Valor real<input min="0" step="0.01" type="number" style={field} value={form.actual_amount} onChange={(event) => setForm({ ...form, actual_amount: event.target.value })} /></label><Button type="submit" loading={saving}>Registrar despesa</Button></form></Modal>;
+}
+
+function IncidenteModal({ reservas, saving, onClose, onSave }) {
+  const [form, setForm] = useState({ reservation_id: '', incident_type: 'damage', quantity: 1, description: '', charge_amount: 0, photo: null });
+  return <Modal title="Registrar avaria ou perda" icon={TriangleAlert} onClose={onClose}><form onSubmit={(event) => { event.preventDefault(); onSave(form); }} style={{ display: 'grid', gap: '0.8rem' }}><label>Item reservado<select style={field} value={form.reservation_id} onChange={(event) => setForm({ ...form, reservation_id: event.target.value })}><option value="">Não vincular</option>{reservas.map((item) => <option key={item.id} value={item.id}>{item.acervo?.nome} · {item.quantidade} un.</option>)}</select></label><label>Ocorrência<select style={field} value={form.incident_type} onChange={(event) => setForm({ ...form, incident_type: event.target.value })}><option value="damage">Avaria</option><option value="loss">Item perdido</option></select></label><label>Quantidade<input required type="number" min="1" style={field} value={form.quantity} onChange={(event) => setForm({ ...form, quantity: event.target.value })} /></label><label>Descrição<textarea required style={field} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label><label>Cobrança ao cliente<input type="number" min="0" step="0.01" style={field} value={form.charge_amount} onChange={(event) => setForm({ ...form, charge_amount: event.target.value })} /></label><label>Foto privada<input type="file" accept="image/*" style={field} onChange={(event) => setForm({ ...form, photo: event.target.files?.[0] || null })} /></label><Button type="submit" loading={saving}>Registrar ocorrência</Button></form></Modal>;
 }

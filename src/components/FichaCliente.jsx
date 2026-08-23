@@ -42,6 +42,8 @@ export default function FichaCliente({ lead, onClose, onAdvanceStatus, onUpdateL
     if (lead?.id) {
       loadData();
     }
+  // loadData intentionally refreshes when the selected deal or its theme changes.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [lead?.id, lead?.tema]);
 
   const loadData = async () => {

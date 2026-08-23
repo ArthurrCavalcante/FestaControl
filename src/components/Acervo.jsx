@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Search, Plus, Edit2, Trash2, CheckCircle2, XCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Package, Search, Plus, Edit2, CheckCircle2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import Button from './ui/Button';
 import Modal from './ui/Modal';

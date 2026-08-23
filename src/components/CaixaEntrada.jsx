@@ -4,10 +4,7 @@ import styles from './CaixaEntrada.module.css';
 import { toast } from 'react-hot-toast';
 
 // UI Components
-import Card from './ui/Card';
-import Badge from './ui/Badge';
 import Button from './ui/Button';
-import IconButton from './ui/IconButton';
 import EmptyState from './ui/EmptyState';
 
 // Icons
@@ -16,14 +13,11 @@ import {
   MessageCircle, 
   MessageSquare, 
   Camera, 
-  Target, 
   Send,
-  X,
   Phone,
   Bot,
   AlertTriangle,
   CheckCircle2,
-  ListTodo,
   RefreshCw,
   Sparkles,
   MapPin,
@@ -37,7 +31,6 @@ import {
 
 export default function CaixaEntrada() {
   const [inboxTab, setInboxTab] = useState('ai_review'); // 'ai_review' | 'chats' | 'alerts'
-  const [chatFilter, setChatFilter] = useState('ACTIVE'); // 'ALL' | 'NEW' | 'ACTIVE' | 'WAITING' | 'ARCHIVED'
   
   const [tasks, setTasks] = useState([]);
   const [conversations, setConversations] = useState([]);
@@ -46,7 +39,6 @@ export default function CaixaEntrada() {
   const [activeItem, setActiveItem] = useState(null); // pode ser uma conversa ou uma task
   const [messages, setMessages] = useState([]);
   const [replyText, setReplyText] = useState('');
-  const [isSending, setIsSending] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   
   const messagesEndRef = useRef(null);
@@ -194,7 +186,7 @@ export default function CaixaEntrada() {
       if (leadError) throw leadError;
 
       // 2. Criar Deal associado
-      const { data: deal, error: dealError } = await supabase.from('deals').insert({
+      const { error: dealError } = await supabase.from('deals').insert({
         lead_id: lead.id,
         status_funil: 'NOVOS',
         tema: evento.tema,

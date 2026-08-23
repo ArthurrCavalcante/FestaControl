@@ -6,7 +6,6 @@ import styles from './KanbanBoard.module.css';
 import Card from './ui/Card';
 import Badge from './ui/Badge';
 import IconButton from './ui/IconButton';
-import Button from './ui/Button';
 import { toast } from 'react-hot-toast';
 import { useCompany } from '../hooks/useCompany';
 
