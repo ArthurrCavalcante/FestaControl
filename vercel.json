@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/entrar", "destination": "/index.html" },
+    { "source": "/convite/:path*", "destination": "/index.html" },
+    { "source": "/proposta/:path*", "destination": "/index.html" },
+    { "source": "/app/:path*", "destination": "/index.html" },
+    { "source": "/admin", "destination": "/index.html" }
+  ]
+}
