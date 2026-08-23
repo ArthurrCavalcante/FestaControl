@@ -149,7 +149,7 @@ serve(async (req) => {
         parsedData[0]._debug_raw = responseText;
         parsedData[0]._debug_images_len = imagesToProcess.length;
       }
-    } catch (parseError) {
+    } catch {
       console.error("Falha ao parsear JSON da IA:", responseText);
       parsedData = imagesToProcess.map(() => ({ tema: "Desconhecido", cores: [], itens: [] }));
     }

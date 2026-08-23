@@ -11,6 +11,12 @@ export type RequestContext<TClient = unknown> = {
   userId: string;
   companyId: string;
   isDemo: boolean;
+  role?: "owner" | "manager" | "staff";
+  subscription?: {
+    status?: string | null;
+    trial_ends_at?: string | null;
+    grace_ends_at?: string | null;
+  } | null;
 };
 
 type ContextResolver<TClient> = (

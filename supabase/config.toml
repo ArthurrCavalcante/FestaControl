@@ -9,6 +9,36 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/send-message/index.ts"
 
+[functions.whatsapp-session]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/whatsapp-session/index.ts"
+
+[functions.rename-company]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/rename-company/index.ts"
+
+[functions.proposal-service]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/proposal-service/index.ts"
+
+[functions.public-proposal]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/public-proposal/index.ts"
+
+[functions.team-invite]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/team-invite/index.ts"
+
+[functions.pilot-admin]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/pilot-admin/index.ts"
+
 [functions.recalculate-state]
 enabled = true
 verify_jwt = true

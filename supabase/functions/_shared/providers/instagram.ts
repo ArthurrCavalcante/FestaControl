@@ -3,7 +3,7 @@ import { NormalizedMessage, Provider } from './Provider.ts';
 export class InstagramProvider implements Provider {
   name = 'instagram';
 
-  async receive(req: Request, rawBody: ArrayBuffer, metadata: any): Promise<NormalizedMessage[]> {
+  async receive(req: Request, rawBody: ArrayBuffer, _metadata: unknown): Promise<NormalizedMessage[]> {
     const decoder = new TextDecoder('utf-8');
     const payloadString = decoder.decode(rawBody);
     let payload;
@@ -60,7 +60,7 @@ export class InstagramProvider implements Provider {
     return messages;
   }
 
-  async send(recipientId: string, content: string, metadata: any): Promise<{ providerMessageId: string }> {
+  async send(recipientId: string, content: string, _metadata: unknown): Promise<{ providerMessageId: string }> {
     const accessToken = Deno.env.get('INSTAGRAM_ACCESS_TOKEN');
     
     if (!accessToken) {

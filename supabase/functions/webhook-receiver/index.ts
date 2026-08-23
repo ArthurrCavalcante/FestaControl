@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.112.3";
 import { ProviderFactory } from "../_shared/providers/ProviderFactory.ts";
 import { resolveConnectedCompany, verifyMetaSignature } from "../_shared/webhook-security.ts";
 import { captureEdgeError } from "../_shared/observability.ts";
+import { assertEvolutionWebhookSecret, isUuid, subscriptionCanWrite } from "../_shared/saas-security.ts";
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -40,6 +41,25 @@ async function resolveCompanyId(platform: string, externalId: string | null): Pr
       .maybeSingle();
     return connection?.company_id ?? null;
   });
+}
+
+async function resolveActiveEvolutionCompany(instanceId: unknown): Promise<string | null> {
+  if (!isUuid(instanceId)) return null;
+  const { data: connection } = await supabase.from("company_connections")
+    .select("company_id")
+    .eq("platform", "evolution")
+    .eq("external_id", instanceId)
+    .eq("status", "ACTIVE")
+    .maybeSingle();
+  if (!connection?.company_id) return null;
+
+  const [{ data: company }, { data: subscription }] = await Promise.all([
+    supabase.from("companies").select("status, is_demo").eq("id", connection.company_id).maybeSingle(),
+    supabase.from("company_subscriptions").select("status, trial_ends_at, grace_ends_at")
+      .eq("company_id", connection.company_id).maybeSingle(),
+  ]);
+  if (!company || company.is_demo || company.status !== "ACTIVE" || !subscriptionCanWrite(subscription)) return null;
+  return connection.company_id;
 }
 
 /**
@@ -127,15 +147,10 @@ serve(async (req) => {
           return new Response('Unauthorized', { status: 401 });
         }
       } else if (isEvolution) {
-        // Para Evolution, a segurança pode ser feita validando um webhook secret
-        // Como o 'instance' é o próprio company_id, um atacante só poderia enviar spam para o próprio banco
-        // Mas o ideal é verificar uma key no header, ex: apikey.
-        const providedKey = req.headers.get('apikey');
-        const expectedKey = Deno.env.get('EVOLUTION_GLOBAL_API_KEY');
-        if (expectedKey && providedKey !== expectedKey) {
-          console.warn('Evolution Webhook: Unauthorized. API Key mismatch.');
-          return new Response('Unauthorized', { status: 401 });
-        }
+        assertEvolutionWebhookSecret(
+          req.headers.get("x-webhook-secret") ?? req.headers.get("apikey"),
+          Deno.env.get("EVOLUTION_WEBHOOK_SECRET") ?? "",
+        );
       }
 
       // Roteamento para o Provider apropriado
@@ -149,7 +164,7 @@ serve(async (req) => {
       let companyId: string | null = null;
 
       if (isEvolution) {
-        companyId = payload.instance; // Para Evolution, configuramos a instância com o ID da empresa
+        companyId = await resolveActiveEvolutionCompany(payload.instance);
       } else {
         // Identificar Empresa via company_connections (multi-tenant real)
         const externalId = payload?.entry?.[0]?.id ?? null;
@@ -162,7 +177,7 @@ serve(async (req) => {
       }
 
       const providerKey = provider.name;
-      const messages = await provider.receive(req, rawBody, {});
+      const messages = await provider.receive(req, rawBody, { company_id: companyId });
 
       for (const msg of messages) {
 
@@ -204,8 +219,9 @@ serve(async (req) => {
          const { data: existingMsg } = await supabase
             .from('messages')
             .select('id')
+            .eq('company_id', companyId)
             .eq('provider_message_id', msg.providerMessageId)
-            .single();
+            .maybeSingle();
             
          if (!existingMsg) {
            const { data: insertedMsg, error: msgError } = await supabase.from('messages').insert({
@@ -222,6 +238,9 @@ serve(async (req) => {
            
            if (!msgError && insertedMsg) {
              messageId = insertedMsg.id;
+             if (!msg.fromMe && isEvolution) {
+               await supabase.rpc("record_inbound_message", { p_company_id: companyId });
+             }
            }
          } else {
            messageId = existingMsg.id;
@@ -256,6 +275,10 @@ serve(async (req) => {
       return new Response('EVENT_RECEIVED', { status: 200, headers: corsHeaders });
     }
   } catch (e) {
+    if (e instanceof Error && e.name === "HttpError") {
+      const status = (e as Error & { status?: number }).status ?? 401;
+      return new Response(status === 503 ? "Webhook not configured" : "Unauthorized", { status });
+    }
     await captureEdgeError(e, 'webhook-receiver', req);
     return new Response('Internal Server Error', { status: 500 });
   }

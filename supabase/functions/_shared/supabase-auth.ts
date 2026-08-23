@@ -17,7 +17,7 @@ export async function loadSupabaseRequestContext(req: Request) {
 
     const { data: profile, error: profileError } = await client
       .from("profiles")
-      .select("company_id")
+      .select("company_id, role")
       .eq("id", user.id)
       .maybeSingle();
     if (profileError || !profile?.company_id) return null;
@@ -29,12 +29,21 @@ export async function loadSupabaseRequestContext(req: Request) {
       .maybeSingle();
     if (companyError || !company) return null;
 
+    const { data: subscription, error: subscriptionError } = await client
+      .from("company_subscriptions")
+      .select("status, trial_ends_at, grace_ends_at")
+      .eq("company_id", profile.company_id)
+      .maybeSingle();
+    if (subscriptionError) return null;
+
     return {
       authorization,
       client,
       userId: user.id,
       companyId: profile.company_id,
       isDemo: company.is_demo === true,
+      role: profile.role,
+      subscription,
     };
   });
 }

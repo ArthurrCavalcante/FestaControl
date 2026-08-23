@@ -3,6 +3,8 @@ import { ProviderFactory } from "../_shared/providers/ProviderFactory.ts";
 import { errorResponse, HttpError, requireLiveTenant, requireTenantResource } from "../_shared/auth.ts";
 import { loadSupabaseRequestContext } from "../_shared/supabase-auth.ts";
 import { captureEdgeError } from "../_shared/observability.ts";
+import { subscriptionCanWrite } from "../_shared/saas-security.ts";
+import { createServiceClient } from "../_shared/service-client.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,9 +32,27 @@ serve(async (req) => {
     const authorizedConversation = requireTenantResource(conversation, context.companyId);
 
     requireLiveTenant(context);
+    if (!subscriptionCanWrite(context.subscription ?? null)) {
+      throw new HttpError(403, "Subscription is read-only");
+    }
+    const { data: whatsappState } = await context.client.from("company_settings")
+      .select("whatsapp_breaker_until").eq("company_id", context.companyId).maybeSingle();
+    if (whatsappState?.whatsapp_breaker_until && new Date(whatsappState.whatsapp_breaker_until).getTime() > Date.now()) {
+      throw new HttpError(502, "WhatsApp is temporarily unavailable. Use the manual fallback");
+    }
     const provider = ProviderFactory.getProviderByName(authorizedConversation.canal);
     if (!provider) throw new HttpError(400, "Unsupported channel");
-    const sendResult = await provider.send(authorizedConversation.remetente_id, content, {});
+    let sendResult;
+    const service = createServiceClient();
+    try {
+      sendResult = await provider.send(authorizedConversation.remetente_id, content, {
+        company_id: context.companyId,
+      });
+      await service.rpc("record_whatsapp_delivery", { p_company_id: context.companyId, p_success: true });
+    } catch (providerError) {
+      await service.rpc("record_whatsapp_delivery", { p_company_id: context.companyId, p_success: false });
+      throw providerError;
+    }
 
     const { data: newMessage, error: insertError } = await context.client
       .from("messages")

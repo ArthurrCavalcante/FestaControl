@@ -1,11 +1,9 @@
 import { Provider, NormalizedMessage } from './Provider.ts';
-import { trackError, trackFunction } from '../observability.ts';
 
 export class EvolutionProvider implements Provider {
   name = 'evolution';
 
-  async receive(req: Request, rawBody: ArrayBuffer, metadata: any): Promise<NormalizedMessage[]> {
-    return await trackFunction('Provider.Evolution.receive', async () => {
+  async receive(_req: Request, rawBody: ArrayBuffer, _metadata: unknown): Promise<NormalizedMessage[]> {
       const textDecoder = new TextDecoder();
       const bodyText = textDecoder.decode(rawBody);
       const payload = JSON.parse(bodyText);
@@ -71,11 +69,9 @@ export class EvolutionProvider implements Provider {
       }
 
       return normalizedMessages;
-    }, { company_id: metadata.company_id, event: 'messages.upsert' });
   }
 
-  async send(recipientId: string, content: string, metadata: any): Promise<{ providerMessageId: string }> {
-    return await trackFunction('Provider.Evolution.send', async () => {
+  async send(recipientId: string, content: string, metadata: { company_id?: string }): Promise<{ providerMessageId: string }> {
       const evolutionUrl = Deno.env.get('EVOLUTION_API_URL');
       const globalApiKey = Deno.env.get('EVOLUTION_GLOBAL_API_KEY');
 
@@ -83,7 +79,8 @@ export class EvolutionProvider implements Provider {
         throw new Error("Váriaveis EVOLUTION_API_URL ou EVOLUTION_GLOBAL_API_KEY não configuradas.");
       }
 
-      const instanceName = metadata.company_id; // Instance is bound to company_id
+      const instanceName = metadata.company_id;
+      if (!instanceName) throw new Error('Evolution instance is not configured.');
 
       const url = `${evolutionUrl}/message/sendText/${instanceName}`;
       
@@ -102,8 +99,7 @@ export class EvolutionProvider implements Provider {
 
       if (!response.ok) {
         const err = await response.text();
-        trackError(new Error(`Evolution API Send Error: ${err}`));
-        throw new Error(`Falha ao enviar via Evolution API: ${err}`);
+        throw new Error(`Falha ao enviar via Evolution API (${response.status}): ${err.slice(0, 300)}`);
       }
 
       const result = await response.json();
@@ -111,6 +107,5 @@ export class EvolutionProvider implements Provider {
       return {
         providerMessageId: result.key?.id || `sent-${Date.now()}`
       };
-    }, { company_id: metadata.company_id, recipientId });
   }
 }
