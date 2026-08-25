@@ -18,17 +18,33 @@ serve(async (req: Request) => {
     if (!admin) throw new HttpError(404, "Resource not found");
 
     if (req.method === "GET") {
-      const [{ data: companies }, { data: subscriptions }, { data: events }, { data: profiles }] = await Promise.all([
+      const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const [
+        { data: companies },
+        { data: subscriptions },
+        { data: events },
+        { data: profiles },
+        { count: errors24h },
+        { count: failedEvents24h },
+      ] = await Promise.all([
         service.from("companies").select("id, nome, status, is_demo, created_at").order("created_at", { ascending: false }),
         service.from("company_subscriptions").select("*").order("created_at", { ascending: false }),
         service.from("product_events").select("company_id, event_name, occurred_at").gte("occurred_at", new Date(Date.now() - 30 * 864e5).toISOString()),
         service.from("profiles").select("company_id"),
+        service.from("error_logs").select("id", { count: "exact", head: true }).gte("created_at", since24h),
+        service.from("events_queue").select("id", { count: "exact", head: true }).eq("status", "FAILED").gte("created_at", since24h),
       ]);
       const memberCounts = (profiles ?? []).reduce((map: Record<string, number>, profile) => {
         map[profile.company_id] = (map[profile.company_id] ?? 0) + 1;
         return map;
       }, {});
-      return new Response(JSON.stringify({ companies: companies ?? [], subscriptions: subscriptions ?? [], events: events ?? [], member_counts: memberCounts }), {
+      return new Response(JSON.stringify({
+        companies: companies ?? [],
+        subscriptions: subscriptions ?? [],
+        events: events ?? [],
+        member_counts: memberCounts,
+        health: { errors_24h: errors24h ?? 0, failed_events_24h: failedEvents24h ?? 0 },
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

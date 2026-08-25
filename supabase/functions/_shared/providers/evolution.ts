@@ -58,7 +58,7 @@ export class EvolutionProvider implements Provider {
 
         normalizedMessages.push({
           providerMessageId,
-          senderId: fromMe ? instance : senderId,
+          senderId,
           recipientId: fromMe ? senderId : instance,
           content,
           mediaType,

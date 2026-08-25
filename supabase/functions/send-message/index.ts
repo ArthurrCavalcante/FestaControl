@@ -75,6 +75,13 @@ serve(async (req) => {
       .eq("company_id", context.companyId);
     if (updateError) throw updateError;
 
+    await context.client.from("product_events").insert({
+      company_id: context.companyId,
+      user_id: context.userId,
+      event_name: "whatsapp_message_sent",
+      properties: { provider: provider.name, source: "inbox" },
+    });
+
     return new Response(JSON.stringify({ success: true, message: newMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

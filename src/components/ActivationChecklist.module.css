@@ -1,0 +1,13 @@
+.band { margin-bottom: 1.5rem; padding: 1.15rem 1.25rem; border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 8px; background: var(--surface); }
+.summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.summary span { color: var(--primary); font-size: .68rem; font-weight: 800; letter-spacing: .08em; }
+.summary h3 { margin: .2rem 0 0; font-size: 1rem; color: var(--text-primary); }
+.summary strong { font-size: 1.35rem; color: var(--text-primary); }
+.progress { height: 5px; margin: .9rem 0; overflow: hidden; border-radius: 3px; background: var(--border); }
+.progress span { display: block; height: 100%; background: var(--accent); transition: width .2s ease; }
+.steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem 1rem; }
+.steps button { min-width: 0; display: grid; grid-template-columns: 18px minmax(0, 1fr) 18px; align-items: center; gap: .55rem; padding: .6rem .25rem; border: 0; border-radius: 6px; background: transparent; color: var(--text-secondary); text-align: left; cursor: pointer; }
+.steps button:hover { background: var(--surface-hover); color: var(--text-primary); }
+.steps button > span { min-width: 0; display: flex; align-items: center; gap: .45rem; }
+.steps small { padding: .1rem .35rem; border-radius: 4px; background: var(--bg-color); color: var(--text-tertiary); font-size: .66rem; }
+@media (max-width: 700px) { .steps { grid-template-columns: 1fr; } .summary h3 { font-size: .9rem; } }

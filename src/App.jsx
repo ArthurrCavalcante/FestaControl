@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Login from './components/Login';
@@ -17,6 +17,7 @@ import { Calendar, BarChart3, Settings, Bell, Plus, ClipboardList, Package, User
 
 import { useCompany } from './hooks/useCompany';
 import Onboarding from './components/Onboarding';
+import { trackProductEvent } from './services/productAnalytics';
 
 const KanbanBoard = lazy(() => import('./components/KanbanBoard'));
 const Catalogo = lazy(() => import('./components/Catalogo'));
@@ -73,6 +74,7 @@ export default function App({ initialTab }) {
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   const [subscriptionState, setSubscriptionState] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const trackedPages = useRef(new Set());
 
   const navigateTo = (tab) => {
     setActiveTab(tab);
@@ -223,6 +225,20 @@ export default function App({ initialTab }) {
     const section = pageTitles[activeTab];
     document.title = section ? `${section} · FestaControl` : 'FestaControl';
   }, [activeTab, session]);
+
+  useEffect(() => {
+    if (!session?.user?.id || !settings?.company_id) return;
+    const context = { companyId: settings.company_id, userId: session.user.id };
+    const openedKey = `festacontrol_opened_${settings.company_id}`;
+    if (!sessionStorage.getItem(openedKey)) {
+      sessionStorage.setItem(openedKey, '1');
+      trackProductEvent(supabase, context, 'app_opened', { surface: isMobile ? 'mobile' : 'desktop' });
+    }
+    if (!trackedPages.current.has(activeTab)) {
+      trackedPages.current.add(activeTab);
+      trackProductEvent(supabase, context, 'page_viewed', { page: activeTab, surface: isMobile ? 'mobile' : 'desktop' });
+    }
+  }, [activeTab, isMobile, session?.user?.id, settings?.company_id]);
 
   useEffect(() => {
     const handleAppRefresh = () => {
@@ -568,6 +584,7 @@ export default function App({ initialTab }) {
           leads={leads} 
           inboxTasksCount={inboxTasksCount} 
           onNovoOrcamento={() => setShowGerador(true)} 
+          onNavigate={navigateTo}
           session={session}
         />;
       }

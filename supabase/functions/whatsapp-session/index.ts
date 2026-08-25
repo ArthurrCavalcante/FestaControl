@@ -4,6 +4,8 @@ import { captureEdgeError } from "../_shared/observability.ts";
 import { createPublicToken } from "../_shared/public-token.ts";
 import { subscriptionCanWrite } from "../_shared/saas-security.ts";
 import { loadSupabaseRequestContext } from "../_shared/supabase-auth.ts";
+import { normalizeEvolutionState } from "../_shared/whatsapp-automation.ts";
+import { buildEvolutionWebhookConfig } from "../_shared/evolution-webhook.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -57,6 +59,24 @@ serve(async (req: Request) => {
       if (response.status === 404) throw new HttpError(404, "WhatsApp connection not found");
       if (!response.ok) throw new HttpError(502, "Could not read WhatsApp status");
       const data = await providerJson(response);
+      const state = normalizeEvolutionState(data);
+      const { data: currentSettings } = await context.client.from("company_settings")
+        .select("whatsapp_status").eq("company_id", context.companyId).maybeSingle();
+      if (currentSettings?.whatsapp_status !== state) {
+        await context.client.from("company_settings").update({
+          whatsapp_status: state,
+          whatsapp_qr_expires_at: state === "connecting" ? undefined : null,
+          whatsapp_last_error: null,
+        }).eq("company_id", context.companyId);
+        if (state === "connected") {
+          await context.client.from("product_events").insert({
+            company_id: context.companyId,
+            user_id: context.userId,
+            event_name: "whatsapp_connected",
+            properties: { provider: "evolution" },
+          });
+        }
+      }
       return new Response(JSON.stringify({ success: true, instance: instanceName, state: data }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -64,7 +84,10 @@ serve(async (req: Request) => {
 
     if (req.method === "POST") {
       const instanceToken = createPublicToken();
-      const webhookUrl = Deno.env.get("WEBHOOK_URL");
+      const webhook = buildEvolutionWebhookConfig(
+        Deno.env.get("WEBHOOK_URL"),
+        Deno.env.get("EVOLUTION_WEBHOOK_SECRET"),
+      );
       const createResponse = await evolutionRequest("/instance/create", {
         method: "POST",
         body: JSON.stringify({
@@ -72,7 +95,7 @@ serve(async (req: Request) => {
           token: instanceToken,
           qrcode: true,
           integration: "WHATSAPP-BAILEYS",
-          webhook: webhookUrl || undefined,
+          webhook,
         }),
       });
       const createData = await providerJson(createResponse);
@@ -80,6 +103,19 @@ serve(async (req: Request) => {
       if (!createResponse.ok && !alreadyExists) {
         throw new HttpError(502, "Could not create WhatsApp connection");
       }
+
+      const webhookResponse = await evolutionRequest(`/webhook/set/${instanceName}`, {
+        method: "POST",
+        body: JSON.stringify({
+          enabled: true,
+          url: webhook.url,
+          webhookByEvents: webhook.byEvents,
+          webhookBase64: webhook.base64,
+          headers: webhook.headers,
+          events: webhook.events,
+        }),
+      });
+      if (!webhookResponse.ok) throw new HttpError(502, "Could not secure WhatsApp webhook");
 
       const qrResponse = await evolutionRequest(`/instance/connect/${instanceName}`);
       const qrData = await providerJson(qrResponse);
@@ -104,6 +140,12 @@ serve(async (req: Request) => {
         whatsapp_last_error: null,
       }).eq("company_id", context.companyId);
       if (settingsError) throw settingsError;
+      await context.client.from("product_events").insert({
+        company_id: context.companyId,
+        user_id: context.userId,
+        event_name: "whatsapp_connection_started",
+        properties: { provider: "evolution" },
+      });
 
       return new Response(JSON.stringify({
         success: true,

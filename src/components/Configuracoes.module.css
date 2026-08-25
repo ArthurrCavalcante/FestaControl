@@ -25,6 +25,13 @@
 }
 
 .qrPanel img { width: min(280px, 100%); aspect-ratio: 1; object-fit: contain; }
+.connectionError { color: #b42318; font-size: .85rem; margin: .5rem 0 0; }
+.automationPanel { display: grid; gap: .85rem; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color); }
+.automationTitle { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.automationTitle p { color: var(--text-secondary); font-size: .85rem; margin: .25rem 0 0; }
+.automationTitle input { width: 20px; height: 20px; accent-color: var(--primary); }
+.automationPanel textarea { min-height: 92px; width: 100%; resize: vertical; padding: .75rem; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-color); color: var(--text-color); }
+.automationFooter { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--text-secondary); font-size: .8rem; }
 .formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .colorRow { display: flex; gap: 1rem; align-items: center; }
 .actionRow { display: flex; justify-content: flex-end; margin-top: 1rem; }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import styles from './CaixaEntrada.module.css';
 import { toast } from 'react-hot-toast';
+import { sendWhatsAppReply } from '../services/whatsappClient';
 
 // UI Components
 import Button from './ui/Button';
@@ -39,6 +40,7 @@ export default function CaixaEntrada() {
   const [activeItem, setActiveItem] = useState(null); // pode ser uma conversa ou uma task
   const [messages, setMessages] = useState([]);
   const [replyText, setReplyText] = useState('');
+  const [isSendingReply, setIsSendingReply] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   
   const messagesEndRef = useRef(null);
@@ -238,11 +240,44 @@ export default function CaixaEntrada() {
     }
   };
 
+  const handleSendReply = async () => {
+    if (!activeItem || !['evolution', 'whatsapp'].includes(activeItem.canal?.toLowerCase())) {
+      toast.error('Esta conversa não está conectada ao WhatsApp.');
+      return;
+    }
+
+    setIsSendingReply(true);
+    try {
+      const message = await sendWhatsAppReply(supabase, activeItem.id, replyText);
+      setMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message]);
+      setConversations((current) => current.map((conversation) => conversation.id === activeItem.id
+        ? { ...conversation, last_message: message.content, last_activity: message.created_at }
+        : conversation));
+      setReplyText('');
+      toast.success('Mensagem enviada.');
+    } catch (error) {
+      console.error(error);
+      toast.error(error.message || 'Não foi possível enviar pelo WhatsApp.');
+    } finally {
+      setIsSendingReply(false);
+    }
+  };
+
+  const openWhatsAppReminder = (alert) => {
+    const number = String(alert.telefone || '').replace(/\D/g, '');
+    if (!number) {
+      toast.error('Cadastre o telefone da cliente antes de abrir o WhatsApp.');
+      return;
+    }
+    const text = `Olá, ${alert.nome}! Passando para confirmar os detalhes da sua festa de ${alert.tema} no dia ${new Date(`${alert.data_festa}T12:00:00`).toLocaleDateString('pt-BR')}.`;
+    window.open(`https://wa.me/55${number.replace(/^55/, '')}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+  };
+
   const getPlatformDetails = (plat) => {
     const p = plat?.toLowerCase() || '';
     if (p === 'facebook') return { icon: MessageSquare, color: '#1877F2', bg: '#eef2ff' };
     if (p === 'instagram') return { icon: Camera, color: '#E1306C', bg: '#fdf2f8' };
-    if (p === 'whatsapp') return { icon: Phone, color: '#25D366', bg: '#dcfce7' };
+    if (p === 'whatsapp' || p === 'evolution') return { icon: Phone, color: '#25D366', bg: '#dcfce7' };
     return { icon: MessageCircle, color: 'var(--primary)', bg: 'var(--primary-light)' };
   };
 
@@ -520,10 +555,8 @@ export default function CaixaEntrada() {
                        </div>
                      </div>
                      <div className={styles.aiActions} style={{ marginTop: '1rem' }}>
-                       <Button variant="primary" size="sm" icon={MessageCircle} onClick={() => {
-                         alert(`Mensagem de cobrança enviada para ${activeItem.telefone}!`);
-                       }}>
-                         Enviar Mensagem de Cobrança / Confirmação
+                       <Button variant="primary" size="sm" icon={MessageCircle} onClick={() => openWhatsAppReminder(activeItem)}>
+                         Abrir mensagem no WhatsApp
                        </Button>
                      </div>
                   </div>
@@ -582,9 +615,18 @@ export default function CaixaEntrada() {
                   placeholder="Escreva sua resposta..."
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
+                  maxLength={4000}
+                  disabled={isSendingReply}
                 />
                 <div className={styles.replyActions}>
-                  <Button variant="primary" icon={Send} disabled>Responder (Em breve)</Button>
+                  <Button
+                    variant="primary"
+                    icon={Send}
+                    onClick={handleSendReply}
+                    disabled={isSendingReply || !replyText.trim() || !['evolution', 'whatsapp'].includes(activeItem.canal?.toLowerCase())}
+                  >
+                    {isSendingReply ? 'Enviando...' : 'Responder'}
+                  </Button>
                 </div>
               </div>
             )}

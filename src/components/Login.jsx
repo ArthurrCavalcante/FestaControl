@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { supabase } from '../supabaseClient';
+import { withCaptchaToken } from '../services/authSecurity';
 import styles from './Login.module.css';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
 
@@ -14,12 +16,24 @@ export default function Login({ allowSignup = false }) {
   const [error, setError] = useState(null);
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const [isSignupMode, setIsSignupMode] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+  const captchaPending = Boolean(turnstileSiteKey && !captchaToken);
+
+  const resetModeState = () => {
+    setError(null);
+    setCaptchaToken('');
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      options: withCaptchaToken(captchaToken),
+    });
     if (error) {
       setError('Credenciais inválidas. Verifique seu e-mail e senha.');
     }
@@ -36,6 +50,7 @@ export default function Login({ allowSignup = false }) {
     
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl,
+      ...withCaptchaToken(captchaToken),
     });
     
     if (error) {
@@ -54,7 +69,7 @@ export default function Login({ allowSignup = false }) {
     const { error: signupError } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: window.location.href },
+      options: { emailRedirectTo: window.location.href, ...withCaptchaToken(captchaToken) },
     });
     if (signupError) setError(signupError.message);
     else toast.success('Conta criada. Confirme seu e-mail para aceitar o convite.');
@@ -110,12 +125,25 @@ export default function Login({ allowSignup = false }) {
               </div>
             </div>
           )}
+
+          {turnstileSiteKey ? (
+            <div className={styles.captcha}>
+              <Turnstile
+                siteKey={turnstileSiteKey}
+                onSuccess={setCaptchaToken}
+                onExpire={() => setCaptchaToken('')}
+                onError={() => setCaptchaToken('')}
+                options={{ theme: 'auto' }}
+              />
+            </div>
+          ) : null}
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <Button 
               type="submit" 
               size="lg" 
               isLoading={loading} 
+              disabled={captchaPending}
               className={styles.submitBtnOverrides}
             >
               {isRecoveryMode ? 'Enviar Link de Recuperação' : isSignupMode ? 'Criar conta' : 'Entrar na Conta'}
@@ -126,10 +154,15 @@ export default function Login({ allowSignup = false }) {
                 type="button" 
                 size="lg" 
                 variant="secondary"
+                disabled={captchaPending}
                 onClick={async () => {
                   setLoading(true);
                   setError(null);
-                  const { error } = await supabase.auth.signInWithPassword({ email: 'visitante@FestaControl.com', password: 'demo-password' });
+                  const { error } = await supabase.auth.signInWithPassword({
+                    email: 'visitante@FestaControl.com',
+                    password: 'demo-password',
+                    options: withCaptchaToken(captchaToken),
+                  });
                   if (error) setError('Conta de visitante não configurada no banco de dados.');
                   setLoading(false);
                 }}
@@ -145,15 +178,15 @@ export default function Login({ allowSignup = false }) {
             <button 
               type="button" 
               className={styles.textButton} 
-              onClick={() => { setIsRecoveryMode(false); setError(null); }}
+              onClick={() => { setIsRecoveryMode(false); resetModeState(); }}
               style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', textDecoration: 'underline' }}
             >
               Voltar para o Login
             </button>
           ) : (
             <>
-              <button type="button" className={styles.textButton} onClick={() => { setIsRecoveryMode(true); setError(null); }} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>Esqueci minha senha</button>
-              {allowSignup ? <button type="button" className={styles.textButton} onClick={() => { setIsSignupMode((value) => !value); setError(null); }} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', marginLeft: 12 }}>{isSignupMode ? 'Já tenho conta' : 'Criar conta'}</button> : null}
+              <button type="button" className={styles.textButton} onClick={() => { setIsRecoveryMode(true); resetModeState(); }} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>Esqueci minha senha</button>
+              {allowSignup ? <button type="button" className={styles.textButton} onClick={() => { setIsSignupMode((value) => !value); resetModeState(); }} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', marginLeft: 12 }}>{isSignupMode ? 'Já tenho conta' : 'Criar conta'}</button> : null}
             </>
           )}
         </p>

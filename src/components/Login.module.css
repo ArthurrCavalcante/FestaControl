@@ -144,6 +144,14 @@
   width: 100%;
 }
 
+.captcha {
+  display: flex;
+  min-height: 65px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
 .footerText {
   margin-top: 2rem;
   font-size: 0.875rem;

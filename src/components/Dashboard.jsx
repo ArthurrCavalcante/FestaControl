@@ -3,8 +3,9 @@ import styles from './Dashboard.module.css';
 import Button from './ui/Button';
 import { Plus } from 'lucide-react';
 import Badge from './ui/Badge';
+import ActivationChecklist from './ActivationChecklist';
 
-export default function Dashboard({ leads = [], inboxTasksCount = 0, onNovoOrcamento, session }) {
+export default function Dashboard({ leads = [], inboxTasksCount = 0, onNovoOrcamento, onNavigate, session }) {
   const userName = session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name || session?.user?.email?.split('@')[0] || 'visitante';
 
   const { metrics, recentActivities } = useMemo(() => {
@@ -103,6 +104,8 @@ export default function Dashboard({ leads = [], inboxTasksCount = 0, onNovoOrcam
           Novo orçamento
         </Button>
       </div>
+
+      <ActivationChecklist onNavigate={onNavigate} />
 
       <div className={styles.metricsGrid}>
         <div className={styles.metricCard}>

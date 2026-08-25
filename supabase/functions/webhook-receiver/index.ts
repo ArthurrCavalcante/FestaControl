@@ -4,6 +4,7 @@ import { ProviderFactory } from "../_shared/providers/ProviderFactory.ts";
 import { resolveConnectedCompany, verifyMetaSignature } from "../_shared/webhook-security.ts";
 import { captureEdgeError } from "../_shared/observability.ts";
 import { assertEvolutionWebhookSecret, isUuid, subscriptionCanWrite } from "../_shared/saas-security.ts";
+import { getWelcomeReply } from "../_shared/whatsapp-automation.ts";
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -177,6 +178,9 @@ serve(async (req) => {
       }
 
       const providerKey = provider.name;
+      const { data: settings } = await supabase.from("company_settings")
+        .select("automations").eq("company_id", companyId).maybeSingle();
+      const whatsappAutomation = (settings?.automations as Record<string, unknown> | null)?.whatsapp as Record<string, unknown> | undefined;
       const messages = await provider.receive(req, rawBody, { company_id: companyId });
 
       for (const msg of messages) {
@@ -190,6 +194,7 @@ serve(async (req) => {
            .eq('company_id', companyId)
            .single();
 
+         const isNewConversation = !conversation;
          if (!conversation) {
             const { data: newConv, error: convError } = await supabase
               .from('conversations')
@@ -268,6 +273,36 @@ serve(async (req) => {
            // Dispara o event-processor (fire-and-forget) — conecta a fila ao processador
            if (queuedEvent) {
              await dispatchEventProcessor(queuedEvent);
+           }
+         }
+
+         const welcomeReply = getWelcomeReply(whatsappAutomation ?? {}, { isNewConversation, fromMe: msg.fromMe === true });
+         if (welcomeReply && conversation) {
+           try {
+             const sent = await provider.send(msg.senderId, welcomeReply, { company_id: companyId });
+             await supabase.from("messages").insert({
+               company_id: companyId,
+               conversation_id: conversation.id,
+               direction: "OUTBOUND",
+               sender_type: "AGENT",
+               content: welcomeReply,
+               content_type: "TEXT",
+               provider_message_id: sent.providerMessageId,
+             });
+             await supabase.from("conversations").update({
+               last_message: welcomeReply,
+               last_activity: new Date().toISOString(),
+             }).eq("id", conversation.id).eq("company_id", companyId);
+             await supabase.rpc("record_whatsapp_delivery", { p_company_id: companyId, p_success: true });
+             await supabase.from("product_events").insert({
+               company_id: companyId,
+               user_id: null,
+               event_name: "whatsapp_auto_reply_sent",
+               properties: { provider: providerKey, automation: "welcome" },
+             });
+           } catch (automationError) {
+             await supabase.rpc("record_whatsapp_delivery", { p_company_id: companyId, p_success: false });
+             console.error("webhook-receiver: automatic welcome failed", automationError instanceof Error ? automationError.message : "unknown error");
            }
          }
       }

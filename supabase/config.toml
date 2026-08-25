@@ -39,6 +39,11 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/pilot-admin/index.ts"
 
+[functions.tenant-bootstrap]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/tenant-bootstrap/index.ts"
+
 [functions.recalculate-state]
 enabled = true
 verify_jwt = true

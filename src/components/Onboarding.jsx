@@ -23,26 +23,17 @@ export default function Onboarding({ onComplete }) {
     try {
       setIsSubmitting(true);
       
-      const { error } = await supabase.rpc('create_new_tenant', {
-        p_company_name: companyName.trim(),
-        p_user_name: userName.trim()
+      const { error } = await supabase.functions.invoke('tenant-bootstrap', {
+        body: {
+          company_name: companyName.trim(),
+          user_name: userName.trim(),
+          phone: phone.trim() || null,
+          pix_key: pixKey.trim() || null,
+        },
       });
 
       if (error) {
         throw error;
-      }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: profile } = await supabase.from('profiles').select('company_id').eq('user_id', user.id).single();
-      if (profile?.company_id) {
-        await supabase.from('company_settings').update({ telefone: phone.trim() || null, pix_key: pixKey.trim() || null })
-          .eq('company_id', profile.company_id);
-        await supabase.from('product_events').insert({
-          company_id: profile.company_id,
-          user_id: user.id,
-          event_name: 'onboarding_completed',
-          properties: { has_phone: Boolean(phone.trim()), has_pix: Boolean(pixKey.trim()) },
-        });
       }
 
       toast.success('Conta configurada com sucesso!');
@@ -53,7 +44,7 @@ export default function Onboarding({ onComplete }) {
     } catch (err) {
       console.error('Erro no onboarding:', err);
       // Se o usuário clicar duas vezes, a função SQL pode lançar erro customizado.
-      if (err.message && err.message.includes('já possui empresa vinculada')) {
+      if (err.message && /já (possui|pertence)/i.test(err.message)) {
         if (onComplete) onComplete();
       } else {
         toast.error(`Erro: ${err.message || 'Falha ao configurar conta.'}`);

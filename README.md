@@ -69,6 +69,7 @@ As Edge Functions rodam no ambiente do Supabase e precisam de variáveis (secret
 - `INSTAGRAM_ACCESS_TOKEN`: Token permanente para enviar respostas e ler dados da Graph API.
 - `EVOLUTION_API_URL`, `EVOLUTION_GLOBAL_API_KEY` e `EVOLUTION_WEBHOOK_SECRET`: provider WhatsApp beta e autenticação do webhook.
 - `SENTRY_DSN` e `SENTRY_ENVIRONMENT`: observabilidade das Edge Functions; sem DSN, permanece desativada.
+- `VITE_TURNSTILE_SITE_KEY`: CAPTCHA opcional no login, cadastro e recuperação; sem chave, o fluxo atual permanece ativo.
 
 Para configurar localmente e fazer deploy das funções:
 ```bash
