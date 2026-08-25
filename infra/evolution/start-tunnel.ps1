@@ -46,4 +46,4 @@ $updatedLines = [IO.File]::ReadAllLines($envPath) | ForEach-Object {
 if ($LASTEXITCODE -ne 0) { throw 'Evolution failed to restart with the public URL.' }
 
 Write-Host "Evolution public URL configured as $publicUrl"
-& $ngrok http --url $domain 8080
+& $ngrok http --domain $domain 8080
