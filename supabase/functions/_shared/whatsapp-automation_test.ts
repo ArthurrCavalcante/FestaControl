@@ -9,6 +9,7 @@ const normalizeEvolutionState = (automation as unknown as Record<string, unknown
 Deno.test("Evolution connection states are normalized", () => {
   assertEquals(typeof normalizeEvolutionState, "function");
   assertEquals(normalizeEvolutionState?.({ instance: { state: "open" } }), "connected");
+  assertEquals(normalizeEvolutionState?.({ event: "connection.update", data: { state: "open" } }), "connected");
   assertEquals(normalizeEvolutionState?.({ state: "connecting" }), "connecting");
   assertEquals(normalizeEvolutionState?.({ instance: { state: "close" } }), "disconnected");
 });

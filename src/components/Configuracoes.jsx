@@ -5,10 +5,10 @@ import { useCompany } from '../hooks/useCompany';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../supabaseClient';
 import styles from './Configuracoes.module.css';
-import { normalizeConnectionState } from '../services/whatsappClient';
+import { normalizeConnectionState, startWhatsAppStatusPolling } from '../services/whatsappClient';
 
 export default function Configuracoes() {
-  const { settings, updateSettings, loading } = useCompany();
+  const { settings, updateSettings, refreshCompany, loading } = useCompany();
   const [formData, setFormData] = useState({
     telefone: '',
     pix_key: '',
@@ -56,21 +56,17 @@ export default function Configuracoes() {
     try {
       const data = await callWhatsAppSession('GET');
       const status = normalizeConnectionState(data);
-      if (status !== settings?.whatsapp_status) await updateSettings({ whatsapp_status: status });
+      await refreshCompany();
       if (status === 'connected') setQrCode('');
       return status;
-    } catch (error) {
-      if (settings?.whatsapp_status === 'connecting') {
-        await updateSettings({ whatsapp_status: 'error', whatsapp_last_error: error.message });
-      }
+    } catch {
       return 'error';
     }
-  }, [callWhatsAppSession, settings?.whatsapp_status, updateSettings]);
+  }, [callWhatsAppSession, refreshCompany]);
 
   useEffect(() => {
     if (settings?.whatsapp_status !== 'connecting') return undefined;
-    const interval = window.setInterval(checkWhatsAppStatus, 5_000);
-    return () => window.clearInterval(interval);
+    return startWhatsAppStatusPolling(checkWhatsAppStatus);
   }, [checkWhatsAppStatus, settings?.whatsapp_status]);
 
   const handleSubmit = async (e) => {
@@ -94,7 +90,7 @@ export default function Configuracoes() {
       setWhatsappBusy(true);
       await callWhatsAppSession('DELETE');
       setQrCode('');
-      await updateSettings({ whatsapp_status: 'disconnected' });
+      await refreshCompany();
       toast.success('WhatsApp desconectado.');
     } catch (error) {
       toast.error(error.message || 'Erro ao desconectar.');
@@ -109,7 +105,7 @@ export default function Configuracoes() {
       const data = await callWhatsAppSession('POST');
       if (!data.base64) throw new Error('O provedor não retornou um QR Code.');
       setQrCode(data.base64);
-      await updateSettings({ whatsapp_status: 'connecting', whatsapp_qr_expires_at: data.expires_at });
+      await refreshCompany();
       toast.success('QR Code gerado. Leia com o WhatsApp da empresa.');
     } catch (error) {
       toast.error(error.message || 'Erro ao conectar.');

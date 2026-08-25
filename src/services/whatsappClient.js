@@ -13,6 +13,16 @@ export function normalizeConnectionState(payload) {
   return 'disconnected';
 }
 
+export function startWhatsAppStatusPolling(checkStatus, options = {}) {
+  const setIntervalFn = options.setIntervalFn ?? window.setInterval.bind(window);
+  const clearIntervalFn = options.clearIntervalFn ?? window.clearInterval.bind(window);
+  const runCheck = () => Promise.resolve(checkStatus()).catch(() => undefined);
+
+  void runCheck();
+  const intervalId = setIntervalFn(runCheck, 5_000);
+  return () => clearIntervalFn(intervalId);
+}
+
 export async function sendWhatsAppReply(client, conversationId, content) {
   const normalizedContent = String(content ?? '').trim();
   if (!normalizedContent) throw new Error('Escreva uma mensagem antes de enviar.');

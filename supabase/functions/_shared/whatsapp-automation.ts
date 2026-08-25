@@ -10,12 +10,13 @@ type MessageContext = {
 
 export function normalizeEvolutionState(payload: Record<string, unknown>): "connected" | "connecting" | "disconnected" {
   const instance = payload.instance as Record<string, unknown> | undefined;
+  const data = payload.data as Record<string, unknown> | undefined;
   const stateValue = payload.state;
   const nestedState = typeof stateValue === "object" && stateValue
     ? stateValue as Record<string, unknown>
     : undefined;
   const nestedInstance = nestedState?.instance as Record<string, unknown> | undefined;
-  const rawState = instance?.state ?? nestedInstance?.state ?? nestedState?.state ?? stateValue;
+  const rawState = instance?.state ?? data?.state ?? nestedInstance?.state ?? nestedState?.state ?? stateValue;
   const state = String(rawState ?? "").toLowerCase();
 
   if (["open", "connected", "online"].includes(state)) return "connected";

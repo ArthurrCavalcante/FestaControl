@@ -4,7 +4,7 @@ import { ProviderFactory } from "../_shared/providers/ProviderFactory.ts";
 import { resolveConnectedCompany, verifyMetaSignature } from "../_shared/webhook-security.ts";
 import { captureEdgeError } from "../_shared/observability.ts";
 import { assertEvolutionWebhookSecret, isUuid, subscriptionCanWrite } from "../_shared/saas-security.ts";
-import { getWelcomeReply } from "../_shared/whatsapp-automation.ts";
+import { getWelcomeReply, normalizeEvolutionState } from "../_shared/whatsapp-automation.ts";
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -174,6 +174,39 @@ serve(async (req) => {
 
       if (!companyId) {
         console.warn('Nenhuma empresa encontrada para este webhook.');
+        return new Response('EVENT_RECEIVED', { status: 200, headers: corsHeaders });
+      }
+
+      if (isEvolution && String(payload.event ?? '').toLowerCase() === 'connection.update') {
+        const state = normalizeEvolutionState(payload);
+        const { data: currentSettings } = await supabase.from('company_settings')
+          .select('whatsapp_status')
+          .eq('company_id', companyId)
+          .maybeSingle();
+        const settingsUpdate: Record<string, unknown> = {
+          whatsapp_status: state,
+          whatsapp_last_error: null,
+        };
+        if (state !== 'connecting') settingsUpdate.whatsapp_qr_expires_at = null;
+
+        const [{ error: settingsError }, { error: connectionError }] = await Promise.all([
+          supabase.from('company_settings').update(settingsUpdate).eq('company_id', companyId),
+          supabase.from('company_connections').update({ last_sync_at: new Date().toISOString() })
+            .eq('company_id', companyId)
+            .eq('platform', 'evolution'),
+        ]);
+        if (settingsError) throw settingsError;
+        if (connectionError) throw connectionError;
+
+        if (state === 'connected' && currentSettings?.whatsapp_status !== 'connected') {
+          await supabase.from('product_events').insert({
+            company_id: companyId,
+            user_id: null,
+            event_name: 'whatsapp_connected',
+            properties: { provider: 'evolution', source: 'webhook' },
+          });
+        }
+
         return new Response('EVENT_RECEIVED', { status: 200, headers: corsHeaders });
       }
 

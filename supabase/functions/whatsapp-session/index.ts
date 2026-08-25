@@ -5,7 +5,10 @@ import { createPublicToken } from "../_shared/public-token.ts";
 import { subscriptionCanWrite } from "../_shared/saas-security.ts";
 import { loadSupabaseRequestContext } from "../_shared/supabase-auth.ts";
 import { normalizeEvolutionState } from "../_shared/whatsapp-automation.ts";
-import { buildEvolutionWebhookConfig } from "../_shared/evolution-webhook.ts";
+import {
+  buildEvolutionWebhookConfig,
+  buildEvolutionWebhookSetPayload,
+} from "../_shared/evolution-webhook.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -106,14 +109,7 @@ serve(async (req: Request) => {
 
       const webhookResponse = await evolutionRequest(`/webhook/set/${instanceName}`, {
         method: "POST",
-        body: JSON.stringify({
-          enabled: true,
-          url: webhook.url,
-          webhookByEvents: webhook.byEvents,
-          webhookBase64: webhook.base64,
-          headers: webhook.headers,
-          events: webhook.events,
-        }),
+        body: JSON.stringify(buildEvolutionWebhookSetPayload(webhook)),
       });
       if (!webhookResponse.ok) throw new HttpError(502, "Could not secure WhatsApp webhook");
 

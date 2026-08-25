@@ -10,6 +10,32 @@ test('normalizes Evolution connection states for the UI', async () => {
   assert.equal(module.normalizeConnectionState({ instance: { state: 'close' } }), 'disconnected');
 });
 
+test('starts WhatsApp status polling immediately and cleans up the interval', async () => {
+  const module = await import('./whatsappClient.js').catch(() => ({}));
+  assert.equal(typeof module.startWhatsAppStatusPolling, 'function');
+
+  let checks = 0;
+  let scheduledCallback;
+  let clearedId;
+  const stop = module.startWhatsAppStatusPolling(
+    () => { checks += 1; },
+    {
+      setIntervalFn: (callback, interval) => {
+        assert.equal(interval, 5_000);
+        scheduledCallback = callback;
+        return 42;
+      },
+      clearIntervalFn: (id) => { clearedId = id; },
+    },
+  );
+
+  assert.equal(checks, 1);
+  scheduledCallback();
+  assert.equal(checks, 2);
+  stop();
+  assert.equal(clearedId, 42);
+});
+
 test('sends a reply through the protected Edge Function contract', async () => {
   const module = await import('./whatsappClient.js').catch(() => ({}));
   assert.equal(typeof module.sendWhatsAppReply, 'function');

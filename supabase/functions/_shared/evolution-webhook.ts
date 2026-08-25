@@ -21,3 +21,18 @@ export function buildEvolutionWebhookConfig(urlValue: string | undefined, secret
     events: ["MESSAGES_UPSERT", "CONNECTION_UPDATE"],
   };
 }
+
+export function buildEvolutionWebhookSetPayload(
+  webhook: ReturnType<typeof buildEvolutionWebhookConfig>,
+) {
+  return {
+    webhook: {
+      enabled: true,
+      url: webhook.url,
+      webhookByEvents: webhook.byEvents,
+      webhookBase64: webhook.base64,
+      headers: webhook.headers,
+      events: webhook.events,
+    },
+  };
+}
