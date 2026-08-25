@@ -24,6 +24,13 @@ export function normalizeEvolutionState(payload: Record<string, unknown>): "conn
   return "disconnected";
 }
 
+export function isEvolutionAlreadyDisconnected(status: number, payload: Record<string, unknown>): boolean {
+  if (status === 404) return true;
+  if (status !== 400) return false;
+
+  return /not connected|disconnected|not found|does not exist/i.test(JSON.stringify(payload));
+}
+
 export function getWelcomeReply(settings: WelcomeSettings, context: MessageContext): string | null {
   if (!context.isNewConversation || context.fromMe || settings.welcome_enabled !== true) return null;
   if (typeof settings.welcome_message !== "string") return null;

@@ -4,7 +4,10 @@ import { captureEdgeError } from "../_shared/observability.ts";
 import { createPublicToken } from "../_shared/public-token.ts";
 import { subscriptionCanWrite } from "../_shared/saas-security.ts";
 import { loadSupabaseRequestContext } from "../_shared/supabase-auth.ts";
-import { normalizeEvolutionState } from "../_shared/whatsapp-automation.ts";
+import {
+  isEvolutionAlreadyDisconnected,
+  normalizeEvolutionState,
+} from "../_shared/whatsapp-automation.ts";
 import {
   buildEvolutionWebhookConfig,
   buildEvolutionWebhookSetPayload,
@@ -153,10 +156,15 @@ serve(async (req: Request) => {
 
     if (req.method === "DELETE") {
       const logoutResponse = await evolutionRequest(`/instance/logout/${instanceName}`, { method: "DELETE" });
-      if (!logoutResponse.ok && logoutResponse.status !== 404) {
+      const logoutData = await providerJson(logoutResponse);
+      if (!logoutResponse.ok && !isEvolutionAlreadyDisconnected(logoutResponse.status, logoutData)) {
         throw new HttpError(502, "Could not disconnect WhatsApp");
       }
-      await evolutionRequest(`/instance/delete/${instanceName}`, { method: "DELETE" });
+      const deleteResponse = await evolutionRequest(`/instance/delete/${instanceName}`, { method: "DELETE" });
+      const deleteData = await providerJson(deleteResponse);
+      if (!deleteResponse.ok && !isEvolutionAlreadyDisconnected(deleteResponse.status, deleteData)) {
+        throw new HttpError(502, "Could not remove WhatsApp connection");
+      }
 
       const { error: settingsError } = await context.client.from("company_settings").update({
         whatsapp_status: "disconnected",

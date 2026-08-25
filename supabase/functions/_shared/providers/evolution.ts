@@ -21,11 +21,16 @@ export class EvolutionProvider implements Provider {
 
       for (const msg of messages) {
         if (!msg.key || !msg.message) continue;
-        
-        // Ignore system messages or broadcasts
-        if (msg.key.remoteJid === 'status@broadcast') continue;
 
-        const senderId = msg.key.remoteJid.replace('@s.whatsapp.net', '');
+        const remoteJid = String(msg.key.remoteJid ?? '');
+        // Group, broadcast, and channel traffic must never enter customer automation.
+        if (
+          remoteJid.endsWith('@g.us')
+          || remoteJid.endsWith('@broadcast')
+          || remoteJid.endsWith('@newsletter')
+        ) continue;
+
+        const senderId = remoteJid.replace('@s.whatsapp.net', '');
         const providerMessageId = msg.key.id;
         const fromMe = msg.key.fromMe || false;
         

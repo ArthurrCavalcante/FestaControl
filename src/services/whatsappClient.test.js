@@ -36,6 +36,15 @@ test('starts WhatsApp status polling immediately and cleans up the interval', as
   assert.equal(clearedId, 42);
 });
 
+test('polls while connecting or connected so external logout is detected', async () => {
+  const module = await import('./whatsappClient.js').catch(() => ({}));
+  assert.equal(typeof module.shouldPollWhatsAppStatus, 'function');
+  assert.equal(module.shouldPollWhatsAppStatus('connecting'), true);
+  assert.equal(module.shouldPollWhatsAppStatus('connected'), true);
+  assert.equal(module.shouldPollWhatsAppStatus('disconnected'), false);
+  assert.equal(module.shouldPollWhatsAppStatus('error'), false);
+});
+
 test('sends a reply through the protected Edge Function contract', async () => {
   const module = await import('./whatsappClient.js').catch(() => ({}));
   assert.equal(typeof module.sendWhatsAppReply, 'function');

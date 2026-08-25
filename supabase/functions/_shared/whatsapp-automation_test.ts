@@ -5,6 +5,9 @@ const { getWelcomeReply } = automation;
 const normalizeEvolutionState = (automation as unknown as Record<string, unknown>).normalizeEvolutionState as
   | undefined
   | ((payload: Record<string, unknown>) => string);
+const isEvolutionAlreadyDisconnected = (automation as unknown as Record<string, unknown>).isEvolutionAlreadyDisconnected as
+  | undefined
+  | ((status: number, payload: Record<string, unknown>) => boolean);
 
 Deno.test("Evolution connection states are normalized", () => {
   assertEquals(typeof normalizeEvolutionState, "function");
@@ -12,6 +15,15 @@ Deno.test("Evolution connection states are normalized", () => {
   assertEquals(normalizeEvolutionState?.({ event: "connection.update", data: { state: "open" } }), "connected");
   assertEquals(normalizeEvolutionState?.({ state: "connecting" }), "connecting");
   assertEquals(normalizeEvolutionState?.({ instance: { state: "close" } }), "disconnected");
+});
+
+Deno.test("logout is idempotent when Evolution reports an already closed instance", () => {
+  assertEquals(typeof isEvolutionAlreadyDisconnected, "function");
+  assertEquals(isEvolutionAlreadyDisconnected?.(404, {}), true);
+  assertEquals(isEvolutionAlreadyDisconnected?.(400, {
+    response: { message: ['The instance is not connected'] },
+  }), true);
+  assertEquals(isEvolutionAlreadyDisconnected?.(502, { error: 'provider unavailable' }), false);
 });
 
 Deno.test("welcome automation only replies to the first inbound message", () => {

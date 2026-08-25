@@ -5,7 +5,11 @@ import { useCompany } from '../hooks/useCompany';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../supabaseClient';
 import styles from './Configuracoes.module.css';
-import { normalizeConnectionState, startWhatsAppStatusPolling } from '../services/whatsappClient';
+import {
+  normalizeConnectionState,
+  shouldPollWhatsAppStatus,
+  startWhatsAppStatusPolling,
+} from '../services/whatsappClient';
 
 export default function Configuracoes() {
   const { settings, updateSettings, refreshCompany, loading } = useCompany();
@@ -65,7 +69,7 @@ export default function Configuracoes() {
   }, [callWhatsAppSession, refreshCompany]);
 
   useEffect(() => {
-    if (settings?.whatsapp_status !== 'connecting') return undefined;
+    if (!shouldPollWhatsAppStatus(settings?.whatsapp_status)) return undefined;
     return startWhatsAppStatusPolling(checkWhatsAppStatus);
   }, [checkWhatsAppStatus, settings?.whatsapp_status]);
 

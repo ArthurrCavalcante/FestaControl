@@ -23,6 +23,10 @@ export function startWhatsAppStatusPolling(checkStatus, options = {}) {
   return () => clearIntervalFn(intervalId);
 }
 
+export function shouldPollWhatsAppStatus(status) {
+  return status === 'connecting' || status === 'connected';
+}
+
 export async function sendWhatsAppReply(client, conversationId, content) {
   const normalizedContent = String(content ?? '').trim();
   if (!normalizedContent) throw new Error('Escreva uma mensagem antes de enviar.');

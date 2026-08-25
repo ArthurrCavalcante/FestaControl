@@ -20,3 +20,18 @@ Deno.test("Evolution keeps inbound and echoed outbound messages in the customer 
   assertEquals(outbound[0].senderId, "5511999999999");
   assertEquals(outbound[0].fromMe, true);
 });
+
+Deno.test("Evolution ignores group messages before automation and persistence", async () => {
+  const provider = new EvolutionProvider();
+  const payload = new TextEncoder().encode(JSON.stringify({
+    event: "messages.upsert",
+    instance: "company-instance",
+    data: {
+      key: { id: "group-1", remoteJid: "120363000000000000@g.us", fromMe: false },
+      messageType: "conversation",
+      message: { conversation: "Mensagem do grupo" },
+    },
+  })).buffer;
+
+  assertEquals(await provider.receive(new Request("https://example.test"), payload, {}), []);
+});
