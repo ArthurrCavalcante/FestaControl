@@ -1,4 +1,5 @@
 import { Provider, NormalizedMessage } from './Provider.ts';
+import { ProviderHttpError } from '../provider-retry.ts';
 
 export class EvolutionProvider implements Provider {
   name = 'evolution';
@@ -69,7 +70,8 @@ export class EvolutionProvider implements Provider {
           mediaType,
           mediaUrl,
           platform: 'whatsapp',
-          fromMe
+          fromMe,
+          rawMediaMessage: mediaType === 'TEXT' ? undefined : msg,
         });
       }
 
@@ -104,13 +106,15 @@ export class EvolutionProvider implements Provider {
 
       if (!response.ok) {
         const err = await response.text();
-        throw new Error(`Falha ao enviar via Evolution API (${response.status}): ${err.slice(0, 300)}`);
+        throw new ProviderHttpError(response.status, `Falha ao enviar via Evolution API (${response.status}): ${err.slice(0, 300)}`);
       }
 
       const result = await response.json();
       
-      return {
-        providerMessageId: result.key?.id || `sent-${Date.now()}`
-      };
+      if (typeof result.key?.id !== 'string' || !result.key.id) {
+        throw new Error('Evolution did not return a provider message id.');
+      }
+
+      return { providerMessageId: result.key.id };
   }
 }

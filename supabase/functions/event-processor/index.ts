@@ -108,7 +108,13 @@ serve(async (req) => {
           if (messageId) {
              await supabase.from('messages').update({ ai_status: 'PROCESSING' }).eq('id', messageId);
           }
-          mediaPayload = await MediaService.downloadAndEncode(mediaUrl);
+          let downloadableUrl = mediaUrl;
+          if (!/^https?:\/\//i.test(mediaUrl)) {
+            const { data: signed, error: signedError } = await supabase.storage.from('crm').createSignedUrl(mediaUrl, 60);
+            if (signedError || !signed?.signedUrl) throw signedError ?? new Error('Could not sign private media.');
+            downloadableUrl = signed.signedUrl;
+          }
+          mediaPayload = await MediaService.downloadAndEncode(downloadableUrl);
         }
 
         // Fetch current CRM state

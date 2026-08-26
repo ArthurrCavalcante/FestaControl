@@ -8,6 +8,7 @@ export interface NormalizedMessage {
   timestamp?: string;
   platform?: string;
   fromMe?: boolean;
+  rawMediaMessage?: Record<string, unknown>;
 }
 
 export interface Provider {

@@ -55,9 +55,11 @@ export function summarizeProductEvents(events = []) {
 export function summarizeOperationalHealth(health = {}) {
   const errors24h = Number(health.errors_24h || 0);
   const failedEvents24h = Number(health.failed_events_24h || 0);
+  const orphanTenants = Number(health.orphan_tenants || 0);
   return {
     errors24h,
     failedEvents24h,
-    status: errors24h + failedEvents24h > 0 ? 'attention' : 'healthy',
+    orphanTenants,
+    status: errors24h + failedEvents24h + orphanTenants > 0 ? 'attention' : 'healthy',
   };
 }

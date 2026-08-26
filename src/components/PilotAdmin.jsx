@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import styles from './Saas.module.css';
 import { summarizeOperationalHealth, summarizeProductEvents } from '../services/productAnalytics';
+import { sentryEnabled } from '../observability';
 
 export default function PilotAdmin() {
   const [data, setData] = useState({ companies: [], subscriptions: [], events: [], member_counts: {}, health: {} });
@@ -60,6 +61,8 @@ export default function PilotAdmin() {
         <div><span className={styles.muted}>Suporte acumulado</span><div className={styles.total}>{metrics.support} min</div></div>
         <div><span className={styles.muted}>Erros nas últimas 24h</span><div className={styles.total}>{metrics.errors24h}</div></div>
         <div><span className={styles.muted}>Eventos falhos nas últimas 24h</span><div className={styles.total}>{metrics.failedEvents24h}</div></div>
+        <div><span className={styles.muted}>Empresas sem membro</span><div className={styles.total}>{metrics.orphanTenants}</div></div>
+        <div><span className={styles.muted}>Sentry frontend / Edge</span><div className={styles.total}>{sentryEnabled ? 'Ativo' : 'Inativo'} / {data.health.edge_sentry_configured ? 'Ativo' : 'Inativo'}</div></div>
       </div>
       <div className={styles.list} style={{ marginTop: 28 }}>
         {data.companies.filter((company) => !company.is_demo).map((company) => {

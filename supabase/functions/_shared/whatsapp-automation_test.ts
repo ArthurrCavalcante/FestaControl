@@ -26,21 +26,21 @@ Deno.test("logout is idempotent when Evolution reports an already closed instanc
   assertEquals(isEvolutionAlreadyDisconnected?.(502, { error: 'provider unavailable' }), false);
 });
 
-Deno.test("welcome automation only replies to the first inbound message", () => {
+Deno.test("welcome automation only replies after an atomic delivery claim", () => {
   assertEquals(typeof getWelcomeReply, "function");
   const settings = {
     welcome_enabled: true,
     welcome_message: "  Obrigado pelo contato!  ",
   };
 
-  assertEquals(getWelcomeReply(settings, { isNewConversation: true, fromMe: false }), "Obrigado pelo contato!");
-  assertEquals(getWelcomeReply(settings, { isNewConversation: false, fromMe: false }), null);
-  assertEquals(getWelcomeReply(settings, { isNewConversation: true, fromMe: true }), null);
+  assertEquals(getWelcomeReply(settings, { deliveryClaimed: true, fromMe: false }), "Obrigado pelo contato!");
+  assertEquals(getWelcomeReply(settings, { deliveryClaimed: false, fromMe: false }), null);
+  assertEquals(getWelcomeReply(settings, { deliveryClaimed: true, fromMe: true }), null);
 });
 
 Deno.test("welcome automation fails closed for invalid configuration", () => {
   assertEquals(typeof getWelcomeReply, "function");
-  assertEquals(getWelcomeReply({ welcome_enabled: false, welcome_message: "Oi" }, { isNewConversation: true, fromMe: false }), null);
-  assertEquals(getWelcomeReply({ welcome_enabled: true, welcome_message: " " }, { isNewConversation: true, fromMe: false }), null);
-  assertEquals(getWelcomeReply({ welcome_enabled: true, welcome_message: "x".repeat(1001) }, { isNewConversation: true, fromMe: false }), null);
+  assertEquals(getWelcomeReply({ welcome_enabled: false, welcome_message: "Oi" }, { deliveryClaimed: true, fromMe: false }), null);
+  assertEquals(getWelcomeReply({ welcome_enabled: true, welcome_message: " " }, { deliveryClaimed: true, fromMe: false }), null);
+  assertEquals(getWelcomeReply({ welcome_enabled: true, welcome_message: "x".repeat(1001) }, { deliveryClaimed: true, fromMe: false }), null);
 });

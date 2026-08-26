@@ -38,12 +38,18 @@ serve(async (req: Request) => {
         map[profile.company_id] = (map[profile.company_id] ?? 0) + 1;
         return map;
       }, {});
+      const orphanTenants = (companies ?? []).filter((company) => !memberCounts[company.id]).length;
       return new Response(JSON.stringify({
         companies: companies ?? [],
         subscriptions: subscriptions ?? [],
         events: events ?? [],
         member_counts: memberCounts,
-        health: { errors_24h: errors24h ?? 0, failed_events_24h: failedEvents24h ?? 0 },
+        health: {
+          errors_24h: errors24h ?? 0,
+          failed_events_24h: failedEvents24h ?? 0,
+          orphan_tenants: orphanTenants,
+          edge_sentry_configured: Boolean(Deno.env.get("SENTRY_DSN")),
+        },
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

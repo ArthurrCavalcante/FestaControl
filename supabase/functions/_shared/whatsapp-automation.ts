@@ -4,7 +4,7 @@ type WelcomeSettings = {
 };
 
 type MessageContext = {
-  isNewConversation: boolean;
+  deliveryClaimed: boolean;
   fromMe: boolean;
 };
 
@@ -32,7 +32,7 @@ export function isEvolutionAlreadyDisconnected(status: number, payload: Record<s
 }
 
 export function getWelcomeReply(settings: WelcomeSettings, context: MessageContext): string | null {
-  if (!context.isNewConversation || context.fromMe || settings.welcome_enabled !== true) return null;
+  if (!context.deliveryClaimed || context.fromMe || settings.welcome_enabled !== true) return null;
   if (typeof settings.welcome_message !== "string") return null;
 
   const message = settings.welcome_message.trim();

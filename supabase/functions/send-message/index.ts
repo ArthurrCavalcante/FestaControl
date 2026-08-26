@@ -5,6 +5,7 @@ import { loadSupabaseRequestContext } from "../_shared/supabase-auth.ts";
 import { captureEdgeError } from "../_shared/observability.ts";
 import { subscriptionCanWrite } from "../_shared/saas-security.ts";
 import { createServiceClient } from "../_shared/service-client.ts";
+import { sendWithProviderRetry } from "../_shared/provider-retry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,9 +46,11 @@ serve(async (req) => {
     let sendResult;
     const service = createServiceClient();
     try {
-      sendResult = await provider.send(authorizedConversation.remetente_id, content, {
-        company_id: context.companyId,
-      });
+      sendResult = await sendWithProviderRetry(() => provider.send(
+        authorizedConversation.remetente_id,
+        content,
+        { company_id: context.companyId },
+      ));
       await service.rpc("record_whatsapp_delivery", { p_company_id: context.companyId, p_success: true });
     } catch (providerError) {
       await service.rpc("record_whatsapp_delivery", { p_company_id: context.companyId, p_success: false });

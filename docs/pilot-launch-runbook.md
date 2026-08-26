@@ -11,7 +11,9 @@
 - WhatsApp circuit breaker opens after three consecutive provider failures for five minutes.
 - Demo and suspended tenants cannot perform external or write actions.
 - The inbox sends real WhatsApp replies through the protected `send-message` function.
-- A company can enable one welcome reply, sent only for the first inbound message in a conversation.
+- A company can enable one welcome reply. An atomic delivery ledger prevents duplicate sends when webhooks repeat.
+- WhatsApp images, documents and audio up to 10 MB are copied to private tenant Storage and opened with short-lived signed URLs.
+- Explicit temporary provider rejections are retried twice; ambiguous network failures are not retried automatically to avoid duplicate messages.
 - Activation analytics are allowlisted and remove properties that may contain PII.
 - The internal pilot panel reports application errors and failed queue events from the last 24 hours.
 
@@ -23,6 +25,7 @@ These controls do not require Supabase Pro:
 2. Create a Sentry free account and configure `VITE_SENTRY_DSN`, `SENTRY_DSN` and `SENTRY_ENVIRONMENT`. Without a DSN the application continues normally and retains the internal health counters.
 3. Deploy the WhatsApp functions only after an Evolution server is reachable and `EVOLUTION_API_URL`, `EVOLUTION_GLOBAL_API_KEY`, `EVOLUTION_WEBHOOK_SECRET` and `WEBHOOK_URL` are present. The connection flow configures the per-instance webhook and its secret header automatically, but it cannot create a real WhatsApp session without that external server.
 4. Use the dashboard checklist to complete company data, inventory, team and the first proposal. WhatsApp remains optional during activation.
+5. The pilot admin health panel must show tenant integrity and whether Sentry is actually configured in each runtime. "Inativo" means the DSN still needs an account-owned setup.
 
 ## Required before the first paid customer
 

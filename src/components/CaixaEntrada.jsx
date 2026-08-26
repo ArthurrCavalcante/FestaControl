@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient';
 import styles from './CaixaEntrada.module.css';
 import { toast } from 'react-hot-toast';
 import { sendWhatsAppReply } from '../services/whatsappClient';
+import { hydratePrivateMessageMedia } from '../services/messageMedia';
 
 // UI Components
 import Button from './ui/Button';
@@ -23,11 +24,12 @@ import {
   Sparkles,
   MapPin,
   Calendar,
-  PlayCircle,
   Loader2,
   DollarSign,
   Bell,
-  ArrowLeft
+  ArrowLeft,
+  FileText,
+  Video
 } from 'lucide-react';
 
 export default function CaixaEntrada() {
@@ -112,7 +114,12 @@ export default function CaixaEntrada() {
       .order('created_at', { ascending: true });
       
     if (!error && data) {
-      setMessages(data);
+      try {
+        setMessages(await hydratePrivateMessageMedia(supabase, data));
+      } catch (mediaError) {
+        console.error('Erro ao assinar mídias privadas:', mediaError);
+        setMessages(data.map((message) => ({ ...message, media_display_url: null })));
+      }
     }
   };
 
@@ -478,8 +485,8 @@ export default function CaixaEntrada() {
                                 {msg.ai_status === 'PROCESSING' && <span className={styles.transcribing} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Loader2 size={14} className={styles.spinner} /> Transcrevendo...</span>}
                                 {msg.ai_status === 'COMPLETED' && <span className={styles.transcribing} style={{color: '#10b981', display: 'inline-flex', alignItems: 'center', gap: '4px'}}><CheckCircle2 size={14} /> Transcrito</span>}
                               </div>
-                              {msg.media_url && (
-                                <a href={msg.media_url} target="_blank" rel="noreferrer" className={styles.mediaLink} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><PlayCircle size={14} /> Ouvir original</a>
+                              {msg.media_display_url && (
+                                <audio controls preload="metadata" src={msg.media_display_url} className={styles.audioPlayer}>Seu navegador não consegue reproduzir este áudio.</audio>
                               )}
                               {msg.transcription && (
                                 <div className={styles.transcriptionBox}>
@@ -496,8 +503,8 @@ export default function CaixaEntrada() {
                                 <Camera size={14} /> <span>Imagem</span>
                                 {msg.ai_status === 'PROCESSING' && <span className={styles.transcribing} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Loader2 size={14} className={styles.spinner} /> Analisando...</span>}
                               </div>
-                              {msg.media_url && (
-                                <img src={msg.media_url} alt="Recebida" className={styles.chatImage} />
+                              {msg.media_display_url && (
+                                <img src={msg.media_display_url} alt="Recebida" className={styles.chatImage} />
                               )}
                               {msg.transcription && (
                                 <div className={styles.transcriptionBox}>
@@ -505,6 +512,20 @@ export default function CaixaEntrada() {
                                   <p>{msg.transcription}</p>
                                 </div>
                               )}
+                            </div>
+                          )}
+
+                          {msg.content_type === 'DOCUMENT' && (
+                            <div className={styles.mediaBubble}>
+                              <div className={styles.mediaHeader}><FileText size={14} /><span>{msg.content || 'Documento'}</span></div>
+                              {msg.media_display_url && <a href={msg.media_display_url} target="_blank" rel="noreferrer" className={styles.mediaLink}>Abrir documento</a>}
+                            </div>
+                          )}
+
+                          {msg.content_type === 'VIDEO' && (
+                            <div className={styles.mediaBubble}>
+                              <div className={styles.mediaHeader}><Video size={14} /><span>Vídeo recebido</span></div>
+                              <p>Vídeos não são baixados automaticamente durante o beta.</p>
                             </div>
                           )}
 

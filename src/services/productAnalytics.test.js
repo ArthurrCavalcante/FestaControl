@@ -35,12 +35,13 @@ test('product analytics summarizes company activation without PII', async () => 
   assert.deepEqual(summary, { activeCompanies: 1, proposingCompanies: 1, whatsappCompanies: 1 });
 });
 
-test('operational health flags failures without exposing log contents', async () => {
+test('operational health flags failures and tenant integrity issues without exposing log contents', async () => {
   const module = await import('./productAnalytics.js');
   assert.equal(typeof module.summarizeOperationalHealth, 'function');
-  assert.deepEqual(module.summarizeOperationalHealth({ errors_24h: 2, failed_events_24h: 1 }), {
+  assert.deepEqual(module.summarizeOperationalHealth({ errors_24h: 2, failed_events_24h: 1, orphan_tenants: 3 }), {
     errors24h: 2,
     failedEvents24h: 1,
+    orphanTenants: 3,
     status: 'attention',
   });
   assert.equal(module.summarizeOperationalHealth({}).status, 'healthy');

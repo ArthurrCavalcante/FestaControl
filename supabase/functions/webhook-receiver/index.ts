@@ -5,6 +5,8 @@ import { resolveConnectedCompany, verifyMetaSignature } from "../_shared/webhook
 import { captureEdgeError } from "../_shared/observability.ts";
 import { assertEvolutionWebhookSecret, isUuid, subscriptionCanWrite } from "../_shared/saas-security.ts";
 import { getWelcomeReply, normalizeEvolutionState } from "../_shared/whatsapp-automation.ts";
+import { sendWithProviderRetry } from "../_shared/provider-retry.ts";
+import { buildPrivateMediaPath, downloadEvolutionMedia } from "../_shared/evolution-media.ts";
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -227,7 +229,6 @@ serve(async (req) => {
            .eq('company_id', companyId)
            .single();
 
-         const isNewConversation = !conversation;
          if (!conversation) {
             const { data: newConv, error: convError } = await supabase
               .from('conversations')
@@ -254,6 +255,8 @@ serve(async (req) => {
 
          // Insere a Message (idempotente pelo provider_message_id)
          let messageId = null;
+         let insertedMessage = false;
+         let storedMediaPath = msg.mediaUrl ?? null;
          const { data: existingMsg } = await supabase
             .from('messages')
             .select('id')
@@ -262,6 +265,33 @@ serve(async (req) => {
             .maybeSingle();
             
          if (!existingMsg) {
+           let mediaDownloadFailed = false;
+           if (
+             isEvolution
+             && msg.rawMediaMessage
+             && ["AUDIO", "IMAGE", "DOCUMENT"].includes(msg.mediaType)
+           ) {
+             try {
+               const media = await downloadEvolutionMedia(companyId, msg.rawMediaMessage);
+               storedMediaPath = buildPrivateMediaPath(
+                 companyId,
+                 conversation.id,
+                 msg.providerMessageId,
+                 media.extension,
+               );
+               const { error: uploadError } = await supabase.storage.from("crm").upload(
+                 storedMediaPath,
+                 media.bytes,
+                 { contentType: media.mimeType, upsert: false },
+               );
+               if (uploadError) throw uploadError;
+             } catch (mediaError) {
+               mediaDownloadFailed = true;
+               storedMediaPath = null;
+               console.error("webhook-receiver: media download failed", mediaError instanceof Error ? mediaError.message : "unknown error");
+             }
+           }
+
            const { data: insertedMsg, error: msgError } = await supabase.from('messages').insert({
              company_id: companyId,
              conversation_id: conversation.id,
@@ -270,12 +300,14 @@ serve(async (req) => {
              content: msg.content,
              provider_message_id: msg.providerMessageId,
              content_type: msg.mediaType,
-             media_url: msg.mediaUrl,
-             ai_status: msg.mediaType !== 'TEXT' ? 'PENDING' : 'COMPLETED'
+             media_url: storedMediaPath,
+             ai_status: msg.mediaType === 'TEXT' ? 'COMPLETED' : (mediaDownloadFailed ? 'ERROR' : 'PENDING')
            }).select('id').single();
-           
-           if (!msgError && insertedMsg) {
-             messageId = insertedMsg.id;
+           if (msgError) throw msgError;
+
+            if (!msgError && insertedMsg) {
+              messageId = insertedMsg.id;
+              insertedMessage = true;
              if (!msg.fromMe && isEvolution) {
                await supabase.rpc("record_inbound_message", { p_company_id: companyId });
              }
@@ -285,14 +317,16 @@ serve(async (req) => {
          }
 
          // Emite evento e dispara o processor de forma assíncrona
-         if (messageId && conversation) {
+         if (insertedMessage && messageId && conversation) {
            const eventRecord = {
              company_id: companyId,
              type: msg.fromMe ? 'message.sent' : 'message.received',
              payload: {
                message_id: messageId,
-               conversation_id: conversation.id,
-               content: msg.content
+                conversation_id: conversation.id,
+                content: msg.content,
+                media_type: msg.mediaType,
+                media_url: storedMediaPath,
              },
              status: 'PENDING'
            };
@@ -309,10 +343,33 @@ serve(async (req) => {
            }
          }
 
-         const welcomeReply = getWelcomeReply(whatsappAutomation ?? {}, { isNewConversation, fromMe: msg.fromMe === true });
-         if (welcomeReply && conversation) {
+         const welcomeCandidate = getWelcomeReply(whatsappAutomation ?? {}, {
+           deliveryClaimed: true,
+           fromMe: msg.fromMe === true,
+         });
+         let welcomeDeliveryId: string | null = null;
+         if (welcomeCandidate && conversation) {
+           const { data: claimId, error: claimError } = await supabase.rpc("claim_whatsapp_automation", {
+             p_company_id: companyId,
+             p_conversation_id: conversation.id,
+             p_automation_name: "welcome",
+             p_max_attempts: 3,
+           });
+           if (claimError) throw claimError;
+           welcomeDeliveryId = claimId;
+         }
+
+         const welcomeReply = getWelcomeReply(whatsappAutomation ?? {}, {
+           deliveryClaimed: Boolean(welcomeDeliveryId),
+           fromMe: msg.fromMe === true,
+         });
+         if (welcomeReply && welcomeDeliveryId && conversation) {
            try {
-             const sent = await provider.send(msg.senderId, welcomeReply, { company_id: companyId });
+             const sent = await sendWithProviderRetry(() => provider.send(
+               msg.senderId,
+               welcomeReply,
+               { company_id: companyId },
+             ));
              await supabase.from("messages").insert({
                company_id: companyId,
                conversation_id: conversation.id,
@@ -327,13 +384,23 @@ serve(async (req) => {
                last_activity: new Date().toISOString(),
              }).eq("id", conversation.id).eq("company_id", companyId);
              await supabase.rpc("record_whatsapp_delivery", { p_company_id: companyId, p_success: true });
-             await supabase.from("product_events").insert({
+              await supabase.from("product_events").insert({
                company_id: companyId,
                user_id: null,
                event_name: "whatsapp_auto_reply_sent",
                properties: { provider: providerKey, automation: "welcome" },
+              });
+             await supabase.rpc("finish_whatsapp_automation", {
+               p_delivery_id: welcomeDeliveryId,
+               p_status: "sent",
+               p_detail: sent.providerMessageId,
              });
-           } catch (automationError) {
+            } catch (automationError) {
+             await supabase.rpc("finish_whatsapp_automation", {
+               p_delivery_id: welcomeDeliveryId,
+               p_status: "failed",
+               p_detail: automationError instanceof Error ? automationError.message.slice(0, 500) : "unknown error",
+             });
              await supabase.rpc("record_whatsapp_delivery", { p_company_id: companyId, p_success: false });
              console.error("webhook-receiver: automatic welcome failed", automationError instanceof Error ? automationError.message : "unknown error");
            }
