@@ -4,3 +4,8 @@ useDefault = true
 [[allowlists]]
 description = "Generated graph analysis cache contains content hashes, not credentials"
 paths = ['''^graphify-out/''']
+
+[[allowlists]]
+description = "Supabase publishable keys are public browser credentials; service-role and legacy JWT keys remain scanned"
+regexTarget = "secret"
+regexes = ['''^sb_publishable_[A-Za-z0-9_-]+$''']

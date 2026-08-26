@@ -53,14 +53,20 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      - name: Require demo E2E configuration
+        shell: bash
+        env:
+          E2E_SUPABASE_ANON_KEY: ${{ vars.E2E_SUPABASE_ANON_KEY }}
+        run: test -n "$E2E_SUPABASE_ANON_KEY"
       - run: npm run test:e2e
         env:
-          # Publishable browser credentials only; the demo tenant is read-only.
           VITE_SUPABASE_URL: https://ksbivaolyusmrcblnnfe.supabase.co
-          VITE_SUPABASE_ANON_KEY: sb_publishable_Rkpag_UBmc7HcqBEr7RSBw_muY6nRSJ
+          VITE_SUPABASE_ANON_KEY: ${{ vars.E2E_SUPABASE_ANON_KEY }}
           E2E_DEMO_ENABLED: 'true'
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: failure()
         with:
           name: playwright-report
-          path: playwright-report
+          path: |
+            playwright-report
+            test-results
