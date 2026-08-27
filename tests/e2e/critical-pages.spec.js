@@ -38,9 +38,23 @@ test('login remains visually stable', async ({ page }) => {
 
 test('public product page remains visually stable', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'FestaControl' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'FestaControl', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Explorar demonstração' })).toHaveAttribute('href', '/entrar');
+  await expect(page.getByRole('img', { name: 'Pipeline de eventos do FestaControl' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Do primeiro contato ao evento concluído' })).toBeVisible();
   await stabilize(page);
   await expect(page).toHaveScreenshot('public-product.png', { animations: 'disabled', fullPage: true });
+});
+
+test('public product workflow responds to pointer and keyboard interaction', async ({ page }) => {
+  await page.goto('/#como-funciona');
+  const proposal = page.getByRole('button', { name: /Proposta/ });
+  const inventory = page.getByRole('button', { name: /Acervo reservado/ });
+  await expect(proposal).toHaveAttribute('aria-pressed', 'true');
+  await inventory.focus();
+  await expect(inventory).toHaveAttribute('aria-pressed', 'true');
+  await proposal.click();
+  await expect(proposal).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('public proposal can be reviewed and accepted idempotently', async ({ page }) => {
