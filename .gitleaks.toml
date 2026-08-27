@@ -1,11 +1,7 @@
 [extend]
 useDefault = true
 
-[[allowlists]]
-description = "Generated graph analysis cache contains content hashes, not credentials"
+[allowlist]
+description = "Generated analysis cache and one audited commit containing only a public Supabase publishable key"
 paths = ['''^graphify-out/''']
-
-[[allowlists]]
-description = "Supabase publishable keys are public browser credentials; service-role and legacy JWT keys remain scanned"
-regexTarget = "secret"
-regexes = ['''^sb_publishable_[A-Za-z0-9_-]+$''']
+commits = ['''a768fb8702c79494c53a1de21fb6aae2832e4f6e''']
